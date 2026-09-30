@@ -5,6 +5,7 @@ Uso (a partir da pasta backend/, com o venv ativo):
 
 Não imprime a connection string nem a senha.
 """
+
 import sys
 import time
 

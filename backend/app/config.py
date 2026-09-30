@@ -1,4 +1,5 @@
 """Configuração da aplicação, lida do arquivo .env na raiz do repositório."""
+
 from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
