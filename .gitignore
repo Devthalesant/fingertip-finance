@@ -21,6 +21,9 @@ data/
 !docs/
 !docs/**
 
+# Excecao: assets do frontend (icones, logo). Nunca prints com dados reais.
+!frontend/public/**
+
 # Segredos e chaves
 .env
 .env.*
@@ -212,4 +215,20 @@ __marimo__/
 .streamlit/secrets.toml
 
 .neon
+
+# Frontend (Node / Next.js)
 node_modules/
+.next/
+out/
+next-env.d.ts
+*.tsbuildinfo
+.vercel/
+playwright-report/
+test-results/
+
+# =====================================================================
+# EXCECOES AO TEMPLATE PYTHON (manter no fim do arquivo)
+# O template ignora lib/, build/ etc. em qualquer pasta. O shadcn/ui
+# coloca codigo em frontend/src/lib/, entao reincluimos.
+# =====================================================================
+!frontend/src/lib/
