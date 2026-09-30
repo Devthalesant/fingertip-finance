@@ -1,0 +1,41 @@
+[project]
+name = "fingertip-finance-backend"
+version = "0.1.0"
+description = "Backend do Fingertip Finance: parsers, ledger, motor de cálculo e API."
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    # API
+    "fastapi==0.141.1",
+    "uvicorn[standard]==0.54.0",
+    # Banco de dados (Postgres)
+    "sqlalchemy==2.1.1",
+    "alembic==1.20.0",
+    "psycopg[binary]==3.3.6",
+    # Configuração (lê o .env)
+    "pydantic-settings==2.15.0",
+    # Dados e parsers (B3 xlsx, extratos Nomad em PDF)
+    "pandas==3.0.6",
+    "openpyxl==3.1.5",
+    "pdfplumber==0.11.10",
+    # Chamadas HTTP (API do Banco Central, Pluggy)
+    "httpx==0.28.1",
+]
+
+# Ferramentas de desenvolvimento (não vão para o servidor)
+[dependency-groups]
+dev = [
+    "pytest==9.1.1",
+    "ruff==0.16.9",
+    "pre-commit==4.6.2",
+]
+
+[tool.uv]
+# Não é um pacote publicável, só uma aplicação.
+package = false
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
