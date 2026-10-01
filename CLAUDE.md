@@ -41,6 +41,9 @@ usar, mobile-first (o uso principal é no celular), instalável como PWA.
 - Decisões de arquitetura relevantes viram um ADR curto em `docs/adr/`
   (contexto, decisão, consequências).
 - Informações pessoais de contexto ficam em `CLAUDE.local.md` (não versionado).
+- Ao explicar código, use linguagem simples e analogias (planilha, ata etc.); sem
+  jargão solto. Depois de um bloco de trabalho, explique o que foi feito e por quê
+  antes de pedir a próxima decisão.
 
 ## Regras de segurança (repo público)
 
@@ -136,6 +139,20 @@ depois é `pg_dump` + `restore`.
 - O Neon entrega `postgresql://...`; o SQLAlchemy com psycopg 3 exige
   `postgresql+psycopg://`. Converta **no código**, não edite o `.env`.
 - Teste de conexão: `cd backend && uv run python check_db.py`.
+- **Migrations (Alembic)**, dentro de `backend/`: `uv run alembic upgrade head` (aplica),
+  `uv run alembic current` (versão do banco), `uv run alembic downgrade -1` (desfaz a
+  última), `uv run alembic upgrade head --sql` (só gera o SQL, sem banco). A URL vem do
+  `.env` via `app.config`, nunca do `alembic.ini`. Modelos em `app/models/` (ver ADR 0001).
+- **Ambientes:**
+  - `dev`: Postgres local (Postgres.app, **a instalar** antes dos testes do parser).
+  - `demo`: o projeto atual no Neon, branch **`demo`** (renomeada de `production`).
+    Só dados sintéticos. É o banco do `.env` hoje, com a migration inicial aplicada.
+    Usuário atual é o dono (`*_owner`); serve para o demo.
+  - `prod`: **outro projeto** no Neon (credenciais separadas), criado só quando for
+    importar dados reais. Antes disso, papéis separados: migrations e app com
+    privilégio mínimo.
+- Testes nunca usam o banco real: `tests/conftest.py` troca o `DATABASE_URL` por uma
+  URL falsa.
 
 **Qualidade e CI:** GitHub Actions rodando lint, testes e build a cada PR. Secret
 scanning com push protection e Dependabot ativos no GitHub.
@@ -146,11 +163,12 @@ curto e cota gratuita). Custo esperado: zero (domínio próprio opcional).
 ## Estrutura
 
 ```
-backend/        FastAPI: app/config.py, check_db.py (API, parsers, motor e jobs virão aqui)
+backend/        app/config.py, app/models/ (14 tabelas), alembic/ (migrations), tests/,
+                check_db.py. API, parsers, motor e jobs virão aqui
 frontend/       Next.js + TypeScript (a criar)
 infra/          configs de deploy (futuro)
 data/           LOCAL, ignorado pelo Git: raw/ (originais) e processed/ (CSVs padronizados)
-sample_data/    dados sintéticos, versionados (a criar)
+sample_data/    gerador de dados sintéticos (generate.py), versionado (a criar)
 docs/           diagramas, ADRs (docs/adr/) e prints com dados falsos, versionados
 scratch/        rascunhos locais, ignorado (build_b3.py é o protótipo do parser B3)
 ```
@@ -269,9 +287,13 @@ Entregas em **fatias verticais**: cada versão vai do banco até a tela e rende 
 - [x] Fase 0: repositório, `.gitignore`, dependências
 - [x] Fase 1: Postgres no Neon, config por `.env`, `check_db.py`
 - [x] Fundação: uv + lockfile, pre-commit com gitleaks, `.gitignore` pronto p/ frontend
-- [ ] **v0.1 Carteira B3** ← próxima: schema + Alembic, `sample_data/`, parser B3,
-      motor de PM, primeiros endpoints, design (identidade + wireframes), scaffold do
-      frontend e tela "Carteira" (dados sintéticos), CI
+- [ ] **v0.1 Carteira B3** ← em andamento
+  - [x] Schema aprovado (ADR 0001), modelos SQLAlchemy, migration inicial aplicada no demo
+  - [ ] **Próximo:** gerador `sample_data/generate.py` (ver seção abaixo)
+  - [ ] Postgres local (Postgres.app) para testes que gravam no banco
+  - [ ] Parser B3 (a partir de `scratch/build_b3.py`) e motor de PM
+  - [ ] Primeiros endpoints, design (identidade + wireframes), scaffold do frontend,
+        tela "Carteira" (dados sintéticos), CI
 - [ ] v0.2 Mercado: cotações diárias (job agendado), benchmarks BCB, Visão geral
       (patrimônio, alocação, comparação com CDI/IPCA/IBOV), TWR e TIR
 - [ ] v0.3 Renda fixa e exterior: CDBs (marcação na curva), Nomad (PTAX), notas de
@@ -286,16 +308,34 @@ Entregas em **fatias verticais**: cada versão vai do banco até a tela e rende 
 
 Depois: categorização com ML, alertas por push (PWA), novos insights.
 
-## v0.1: por onde começar
+## v0.1: decisões já tomadas (não rediscutir)
 
-Antes de escrever código, propor e discutir com o dono um schema com, no mínimo:
-instituições/contas, ativos (classe, moeda, ticker canônico, aliases), arquivos
-importados, linhas brutas (imutáveis, hash com índice de ocorrência), lançamentos
-normalizados, eventos corporativos, direitos de subscrição, snapshots de posição,
-cotações, taxas de câmbio (PTAX) e títulos de renda fixa (indexador, %, vencimento,
-identificador externo).
+- **Schema:** 14 tabelas em 4 grupos (cadastro, importação/ledger, eventos,
+  conciliação/mercado). Detalhes e motivos no ADR 0001. A tabela
+  `dividend_announcement` (proventos anunciados) fica para a v0.4.
+- **Ativo novo vindo de importação** entra como `A_CLASSIFICAR` e o app pede ao dono a
+  classe (uma vez por ativo).
+- **Lançamento manual + importação, modelo híbrido:** compra lançada à mão na hora
+  (`origin = MANUAL`, com quantidade e valor total da nota, que já inclui os custos);
+  o extrato da B3 importado depois traz proventos e eventos e casa com o manual via
+  `duplicate_of_id`. Importação não precisa ser mensal; períodos sobrepostos são
+  deduplicados pelo hash.
+- **Proventos:** recebido e anunciado são exatos (valor por cota × quantidade na data
+  com); não anunciado é projeção pelo histórico. A tela mostra confirmado e estimado
+  separados.
 
-Depois de aprovado: modelos SQLAlchemy, `alembic init`, primeira migration e testes
-com `sample_data/`.
+## v0.1: próximo passo, o gerador de `sample_data/`
+
+Aprovado pelo dono. `sample_data/generate.py`, determinístico, gera xlsx sintéticos no
+**formato exato do extrato de movimentação da B3**; os testes e o seed do demo chamam o
+gerador (o xlsx gerado não precisa ser versionado). Investidor fictício desde 2021,
+duas corretoras fictícias (com grafias variadas), 12 a 15 ativos com **tickers reais e
+públicos** e quantidades e preços inventados. Carteira **diferente da do dono**.
+Cenários obrigatórios: compras e vendas com lucro e prejuízo; linhas idênticas no
+mesmo dia; aluguel (saída, remuneração, retorno, reembolso de provento); desdobro,
+grupamento, bonificação; troca de ticker; direito exercido e direito expirado;
+transferência entre corretoras; rendimentos de FII, dividendos, JCP; mês com vendas
+acima de R$ 20 mil; consolidado mensal com uma divergência proposital; CDB, LCA,
+Tesouro. Nomad fica para a v0.3.
 
 Commits feitos por você não devem carregar a mensagem de coautoria do Claude.
