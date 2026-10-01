@@ -1,0 +1,119 @@
+"""Valores possíveis das colunas categóricas.
+
+Categorias do domínio financeiro (classes, tipos de lançamento, eventos) usam os termos
+da B3 e da Receita, em português. Estados técnicos (origem, direção) ficam em inglês.
+"""
+
+from enum import StrEnum
+
+
+class InstitutionKind(StrEnum):
+    BROKER = "BROKER"
+    BANK = "BANK"
+    FOREIGN_BROKER = "FOREIGN_BROKER"
+
+
+class AccountKind(StrEnum):
+    CUSTODY = "CUSTODY"
+    CHECKING = "CHECKING"
+    CREDIT_CARD = "CREDIT_CARD"
+
+
+class AssetClass(StrEnum):
+    ACAO = "ACAO"
+    FII = "FII"
+    ETF = "ETF"
+    BDR = "BDR"
+    UNIT = "UNIT"
+    RENDA_FIXA = "RENDA_FIXA"
+    TESOURO = "TESOURO"
+    DIREITO_SUBSCRICAO = "DIREITO_SUBSCRICAO"
+    RECIBO_SUBSCRICAO = "RECIBO_SUBSCRICAO"
+    ACAO_EXTERIOR = "ACAO_EXTERIOR"
+    ETF_EXTERIOR = "ETF_EXTERIOR"
+    # Ticker novo vindo de importação: o dono confirma a classe uma vez.
+    A_CLASSIFICAR = "A_CLASSIFICAR"
+
+
+class FixedIncomeProduct(StrEnum):
+    CDB = "CDB"
+    LCA = "LCA"
+    LCI = "LCI"
+    CRI = "CRI"
+    CRA = "CRA"
+    DEBENTURE = "DEBENTURE"
+    TESOURO_SELIC = "TESOURO_SELIC"
+    TESOURO_IPCA = "TESOURO_IPCA"
+    TESOURO_PREFIXADO = "TESOURO_PREFIXADO"
+
+
+class Indexer(StrEnum):
+    CDI = "CDI"
+    IPCA = "IPCA"
+    SELIC = "SELIC"
+    PRE = "PRE"
+
+
+class TaxRegime(StrEnum):
+    REGRESSIVO = "REGRESSIVO"
+    ISENTO = "ISENTO"
+
+
+class DataSource(StrEnum):
+    B3_MOVIMENTACAO = "B3_MOVIMENTACAO"
+    B3_CONSOLIDADO_MENSAL = "B3_CONSOLIDADO_MENSAL"
+    B3_CONSOLIDADO_ANUAL = "B3_CONSOLIDADO_ANUAL"
+    NOMAD_EXTRATO = "NOMAD_EXTRATO"
+    NOMAD_IR = "NOMAD_IR"
+
+
+class EntryOrigin(StrEnum):
+    IMPORT = "IMPORT"
+    MANUAL = "MANUAL"
+
+
+class Direction(StrEnum):
+    IN = "IN"
+    OUT = "OUT"
+
+
+class EntryType(StrEnum):
+    COMPRA = "COMPRA"
+    VENDA = "VENDA"
+    RESGATE = "RESGATE"
+    ALUGUEL_SAIDA = "ALUGUEL_SAIDA"
+    ALUGUEL_RETORNO = "ALUGUEL_RETORNO"
+    ALUGUEL_REGISTRO = "ALUGUEL_REGISTRO"
+    ALUGUEL_REMUNERACAO = "ALUGUEL_REMUNERACAO"
+    REEMBOLSO_ALUGUEL = "REEMBOLSO_ALUGUEL"
+    RENDIMENTO = "RENDIMENTO"
+    JCP = "JCP"
+    DIVIDENDO = "DIVIDENDO"
+    JUROS = "JUROS"
+    AMORTIZACAO = "AMORTIZACAO"
+    BONIFICACAO = "BONIFICACAO"
+    DESDOBRO = "DESDOBRO"
+    GRUPAMENTO = "GRUPAMENTO"
+    ATUALIZACAO = "ATUALIZACAO"
+    INCORPORACAO = "INCORPORACAO"
+    FRACAO_BAIXA = "FRACAO_BAIXA"
+    LEILAO_FRACAO = "LEILAO_FRACAO"
+    SUBSCRICAO_SOLICITADA = "SUBSCRICAO_SOLICITADA"
+    SUBSCRICAO_EXERCIDA = "SUBSCRICAO_EXERCIDA"
+    SUBSCRICAO_RECIBO = "SUBSCRICAO_RECIBO"
+    DIREITO_RECEBIDO = "DIREITO_RECEBIDO"
+    DIREITO_CEDIDO = "DIREITO_CEDIDO"
+    DIREITO_CESSAO_SOLICITADA = "DIREITO_CESSAO_SOLICITADA"
+    DIREITO_EXPIRADO = "DIREITO_EXPIRADO"
+    TRANSFERENCIA_CUSTODIA = "TRANSFERENCIA_CUSTODIA"
+    EVENTO_EXCLUIDO = "EVENTO_EXCLUIDO"
+
+
+class CorporateEventType(StrEnum):
+    DESDOBRO = "DESDOBRO"
+    GRUPAMENTO = "GRUPAMENTO"
+    BONIFICACAO = "BONIFICACAO"
+    TROCA_TICKER = "TROCA_TICKER"
+    CISAO = "CISAO"
+    INCORPORACAO = "INCORPORACAO"
+    CONVERSAO_RECIBO = "CONVERSAO_RECIBO"

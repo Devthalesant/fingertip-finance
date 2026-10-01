@@ -39,3 +39,12 @@ target-version = "py312"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
+
+[tool.ruff.lint.per-file-ignores]
+# Migrations são geradas: as listas de valores dos CHECKs ficam em uma linha só.
+"alembic/versions/*" = ["E501"]
+
+[tool.ruff.lint.isort]
+# A pasta backend/alembic/ (migrations) confunde o ruff, que acharia que o pacote
+# alembic é nosso. Ele é uma dependência externa.
+known-third-party = ["alembic"]
