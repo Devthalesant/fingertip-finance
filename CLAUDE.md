@@ -167,11 +167,11 @@ curto e cota gratuita). Custo esperado: zero (domínio próprio opcional).
 
 ```
 backend/        app/config.py, app/models/ (15 tabelas), alembic/ (migrations), tests/,
-                check_db.py. API, parsers, motor e jobs virão aqui
+                check_db.py, sample_data/ (gerador sintético). API, parsers, motor e
+                jobs virão aqui
 frontend/       Next.js + TypeScript (a criar)
 infra/          configs de deploy (futuro)
 data/           LOCAL, ignorado pelo Git: raw/ (originais) e processed/ (CSVs padronizados)
-sample_data/    gerador de dados sintéticos (generate.py), versionado (a criar)
 docs/           diagramas, ADRs (docs/adr/) e prints com dados falsos, versionados
 scratch/        rascunhos locais, ignorado (build_b3.py é o protótipo do parser B3)
 ```
@@ -239,6 +239,23 @@ scratch/        rascunhos locais, ignorado (build_b3.py é o protótipo do parse
   numa coluna diferente, a mercado). Não confiar cegamente.
 - Resultado realizado é **bruto** (antes de IR). Categorias fiscais distintas: ações,
   FIIs, exterior, renda fixa (LCA isenta; CDB na tabela regressiva).
+- Formato do extrato: data como **texto** `dd/mm/aaaa`; linhas da mais nova para a mais
+  antiga; preço e valor ausentes como o texto `-`; `Credito`/`Debito` sem acento.
+- **JCP vem líquido:** o preço é o bruto por ação e o valor já desconta os 15% de IR.
+  Dividendo e rendimento vêm brutos.
+- Saída de aluguel: `Transferência - Liquidação` a débito **sem preço** (venda tem preço).
+  O par interno de `Transferência` (mesmo dia e corretora) marca o aluguel; com
+  corretoras diferentes, é transferência de custódia.
+- Eventos (desdobro, bonificação, grupamento, atualização, direitos) vêm a crédito, sem
+  preço. Desdobro e bonificação trazem as ações **recebidas**; grupamento traz a
+  quantidade **resultante**, com fração. Troca de ticker é só um crédito de
+  `Atualização` no ticker novo.
+- Subscrição: direito → solicitação → exercido (o pagamento) → recibo → atualização (o
+  recibo vira cota). Contar recibo **e** atualização dobra a quantidade.
+- Rótulos de renda fixa misturam caixa e acento (`AMORTIZAÇÃO` e
+  `AMORTIZACAO PROGRAMADA`, `COMPRA / VENDA` e `COMPRA/VENDA`).
+- Consolidado: produto com espaços sobrando no fim; aba termina com linha vazia,
+  "Total" e o valor; quantidade de proventos como texto; célula vazia e `""` misturadas.
 
 **Renda fixa bancária**
 - CDBs de aportes pequenos podem não aparecer na B3. A fonte é o extrato do banco e,
@@ -294,8 +311,9 @@ Entregas em **fatias verticais**: cada versão vai do banco até a tela e rende 
   - [x] Schema aprovado (ADR 0001), modelos SQLAlchemy, migration inicial aplicada no demo
   - [x] Multiusuário (ADR 0002): `app_user`, `user_id` nas tabelas do usuário, ativo
         privado; migration `d29a1ab84532` (aplicar no demo)
-  - [ ] **Próximo:** gerador `sample_data/generate.py` (ver seção abaixo)
-  - [ ] Postgres local (Postgres.app) para testes que gravam no banco
+  - [x] Gerador `backend/sample_data/` (história, gabarito à mão, extrato e consolidado
+        no formato da B3, eventos reais conferidos em fonte oficial)
+  - [ ] **Próximo:** Postgres local + parser B3
   - [ ] Parser B3 (a partir de `scratch/build_b3.py`) e motor de PM
   - [ ] Primeiros endpoints, design (identidade + wireframes), scaffold do frontend,
         tela "Carteira" (dados sintéticos), CI
@@ -335,18 +353,16 @@ Depois: categorização com ML, alertas por push (PWA), novos insights.
   com); não anunciado é projeção pelo histórico. A tela mostra confirmado e estimado
   separados.
 
-## v0.1: próximo passo, o gerador de `sample_data/`
+## v0.1: gerador de dados sintéticos (`backend/sample_data/`)
 
-Aprovado pelo dono. `sample_data/generate.py`, determinístico, gera xlsx sintéticos no
-**formato exato do extrato de movimentação da B3**; os testes e o seed do demo chamam o
-gerador (o xlsx gerado não precisa ser versionado). Investidor fictício desde 2021,
-duas corretoras fictícias (com grafias variadas), 12 a 15 ativos com **tickers reais e
-públicos** e quantidades e preços inventados. Carteira **diferente da do dono**.
-Cenários obrigatórios: compras e vendas com lucro e prejuízo; linhas idênticas no
-mesmo dia; aluguel (saída, remuneração, retorno, reembolso de provento); desdobro,
-grupamento, bonificação; troca de ticker; direito exercido e direito expirado;
-transferência entre corretoras; rendimentos de FII, dividendos, JCP; mês com vendas
-acima de R$ 20 mil; consolidado mensal com uma divergência proposital; CDB, LCA,
-Tesouro. Nomad fica para a v0.3.
+Pronto. `uv run python -m sample_data.generate` grava em `sample_data/out/` (ignorado)
+o extrato de movimentação e o consolidado de mar/2024, determinísticos (mesmos bytes).
+- `scenario.py`: a história do investidor fictício, um grupo de cenários por função.
+- `expected.py`: o **gabarito, calculado à mão** e validado pelo dono. Nunca gerar o
+  gabarito com código do app (um erro de PM apareceria nos dois lados).
+- `b3_format.py` e `b3_consolidated.py`: o formato da B3, com as esquisitices.
+- Tickers e eventos corporativos reais (fonte no comentário); quantidades, preços e
+  proventos inventados. Ao incluir ativo, conferir eventos reais no período em que o
+  investidor o tem.
 
 Commits feitos por você não devem carregar a mensagem de coautoria do Claude.
