@@ -3,7 +3,42 @@
 Entregas em **fatias verticais**: cada versão vai do banco até a tela e rende um post.
 O resumo com o status atual fica no `CLAUDE.md`; aqui ficam os detalhes.
 
-- **v0.1 Carteira B3**: schema (ADR 0001), multiusuário (ADR 0002), gerador sintético,
+## Próximos passos (atualizado em 03/10/2026)
+
+1. **Bancos locais** (proposta feita, aguardando o ok do dono):
+   - o dono roda `createdb fingertip_dev` e `createdb fingertip_test`;
+   - `.env` passa a apontar para o local; a URL do Neon vai para `.env.demo` (o dono
+     move a linha; nunca imprimir). `app/config.py` escolhe o arquivo por `APP_ENV`
+     (`dev` padrão, `demo`, depois `prod`);
+   - fixture de testes com banco real: schema via `alembic upgrade head`, transação
+     desfeita ao fim de cada teste, **recusa** URL fora de `localhost` ou banco sem
+     sufixo `_test`, pula com aviso se o Postgres estiver desligado.
+2. **Parser B3 + motor de PM** (v0.1), seguindo as skills `gabarito`,
+   `test-driven-development` e `verification-before-completion`:
+   - parser grava as 3 camadas (arquivo → linha bruta → lançamento), regras em
+     `.claude/rules/dados-b3.md`; portar só regras de `scratch/build_b3.py`;
+   - o motor faz a "prova" contra `sample_data/expected.py`;
+   - testes de propriedade (skill `property-based-testing`): pedir ok para adicionar
+     `hypothesis` como dependência de desenvolvimento.
+3. Depois: endpoints, design, scaffold do frontend, tela Carteira, CI.
+
+## Pendências e lembretes
+- **Avaliar as skills na prática** ao escrever o parser (especialmente a `gabarito`: foi
+  acionada? orientou certo?). Testes formais com o skill-creator ficaram para depois.
+- **Outras skills do obra/superpowers** a consultar conforme a necessidade (copiar e
+  auditar, como as atuais): `systematic-debugging` (bugs e testes falhando),
+  `writing-plans` e `executing-plans` (tarefas grandes), `requesting-code-review` e
+  `receiving-code-review`, `brainstorming` (antes de features novas),
+  `finishing-a-development-branch`. Evitar `using-superpowers` (exige skill antes de
+  qualquer resposta) e o pacote inteiro (hook em toda sessão).
+- Conferir se o KNRI11 fez emissões depois da 8ª (2024): o investidor fictício o mantém
+  até 2026.
+- Formato da aba de Tesouro Direto no consolidado ainda desconhecido (fora do sintético).
+- IR (v0.7): validar com contador que lucro de mês isento não consome prejuízo.
+
+## Versões
+
+ schema (ADR 0001), multiusuário (ADR 0002), gerador sintético,
   Postgres local, parser B3 (a partir de `scratch/build_b3.py`), motor de PM, primeiros
   endpoints, design (identidade + wireframes), scaffold do frontend, tela "Carteira"
   com dados sintéticos, CI.

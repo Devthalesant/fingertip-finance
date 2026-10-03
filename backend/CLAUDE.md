@@ -36,6 +36,13 @@ Dev: pytest, ruff, pre-commit (gitleaks, ruff). `pyproject.toml` + `uv.lock`
 - Tabelas de dados do usuário usam `UserOwnedMixin` (`user_id`); o resto é catálogo
   compartilhado (ADR 0002). Teste em `tests/test_models.py` garante a lista.
 
+## Skills do projeto (`.claude/skills/`, origem e versões no README de lá)
+- `fastapi`: seguir, **exceto** SQLModel (usamos SQLAlchemy, ADR 0001) e `float` nos
+  exemplos (dinheiro é `Decimal`).
+- `test-driven-development`: vale para parser, motor e IR; exploração combinada com o
+  dono fica fora da regra "apague o código".
+- `gabarito`: método dos dados sintéticos e do gabarito à mão.
+
 ## Dinheiro
 `Decimal` no Python, `NUMERIC` no banco (`MONEY` 18,2; quantidade e preço 28,10),
 string decimal na API. Nunca `float`.

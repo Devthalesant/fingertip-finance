@@ -91,14 +91,17 @@ Referência carregada sob demanda (ler antes de mexer no assunto):
 - `.claude/rules/outras-fontes.md`: renda fixa bancária, Nomad, cartão.
 - `.claude/rules/ir.md`: regras de IR (compensação de prejuízo, isenção).
 - `.claude/rules/frontend.md`: stack do frontend e design.
+- `.claude/skills/`: skills auditadas (fastapi, frontend-design, property-based-testing,
+  test-driven-development, verification-before-completion) e a nossa `gabarito`.
 
 ## Roadmap (detalhes em `docs/roadmap.md`)
 - [x] Fundação: repo, Neon, uv + lockfile, pre-commit com gitleaks
 - [ ] **v0.1 Carteira B3** ← em andamento
   - [x] Schema (ADR 0001), multiusuário (ADR 0002), gerador sintético com gabarito
-  - [x] Postgres 18 local instalado
-  - [ ] **Próximo:** bancos locais (`fingertip_dev`, `fingertip_test`) e `.env` por
-        ambiente (`APP_ENV`); depois parser B3 e motor de PM
+  - [x] Postgres 18 local instalado; contexto do Claude reorganizado; skills auditadas
+  - [ ] **Próximo (ver "Próximos passos" em `docs/roadmap.md`):** 1) aprovar e montar
+        os bancos locais + `.env` por ambiente; 2) parser B3 e motor de PM com TDD,
+        gabarito e testes de propriedade
   - [ ] Endpoints, design, scaffold do frontend, tela Carteira, CI
 - [ ] v0.2 Mercado · v0.3 Renda fixa e exterior · v0.4 Insights e proventos ·
       v0.5 Gastos · v0.6 Pluggy · v0.7 IR · v1.0 Deploy

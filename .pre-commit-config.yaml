@@ -18,9 +18,12 @@ repos:
       - id: trailing-whitespace
 
   # Lint e formatação do Python (usa a config do backend/pyproject.toml).
+  # Skills copiadas ficam idênticas à origem auditada: o ruff não mexe nelas.
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.16.9
     hooks:
       - id: ruff-check
         args: ["--fix"]
+        exclude: ^\.claude/skills/
       - id: ruff-format
+        exclude: ^\.claude/skills/
