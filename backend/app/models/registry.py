@@ -6,7 +6,7 @@ from decimal import Decimal
 from sqlalchemy import CheckConstraint, ForeignKey, Numeric, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.models.base import CURRENCY, Base, IdMixin, enum_column
+from app.models.base import CURRENCY, Base, IdMixin, UserOwnedMixin, enum_column
 from app.models.enums import (
     AccountKind,
     AssetClass,
@@ -36,11 +36,11 @@ class InstitutionAlias(IdMixin, Base):
     raw_name: Mapped[str] = mapped_column(String(200), unique=True)
 
 
-class Account(IdMixin, Base):
+class Account(IdMixin, UserOwnedMixin, Base):
     """Conta dentro de uma instituição (custódia, corrente, cartão)."""
 
     __tablename__ = "account"
-    __table_args__ = (UniqueConstraint("institution_id", "kind", "label"),)
+    __table_args__ = (UniqueConstraint("user_id", "institution_id", "kind", "label"),)
 
     institution_id: Mapped[int] = mapped_column(ForeignKey("institution.id"))
     kind: Mapped[AccountKind] = mapped_column(enum_column(AccountKind))
@@ -53,12 +53,17 @@ class Account(IdMixin, Base):
 class Asset(IdMixin, Base):
     """Um ativo, identificado pelo ticker (ou código do título) canônico.
 
-    A classe é dado cadastrado, nunca deduzida do sufixo do ticker.
+    A classe é dado cadastrado, nunca deduzida do sufixo do ticker. Sem dono, é do
+    catálogo compartilhado; com dono, é privado (ex.: CDB que não aparece na B3).
     """
 
     __tablename__ = "asset"
+    __table_args__ = (
+        UniqueConstraint("owner_user_id", "canonical_code", postgresql_nulls_not_distinct=True),
+    )
 
-    canonical_code: Mapped[str] = mapped_column(String(40), unique=True)
+    owner_user_id: Mapped[int | None] = mapped_column(ForeignKey("app_user.id"))
+    canonical_code: Mapped[str] = mapped_column(String(40))
     name: Mapped[str | None] = mapped_column(String(200))
     asset_class: Mapped[AssetClass] = mapped_column(enum_column(AssetClass))
     currency: Mapped[str] = mapped_column(CURRENCY, default="BRL")

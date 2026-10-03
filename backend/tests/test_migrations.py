@@ -28,7 +28,8 @@ def test_upgrade_creates_every_model_table() -> None:
 
 
 def test_constraint_names_are_unique() -> None:
-    names = re.findall(r"CONSTRAINT (\w+)", offline_sql("upgrade", "head"))
+    # DROP CONSTRAINT não conta: uma migration posterior pode trocar uma constraint.
+    names = re.findall(r"(?<!DROP )CONSTRAINT (\w+)", offline_sql("upgrade", "head"))
     assert len(names) == len(set(names))
 
 

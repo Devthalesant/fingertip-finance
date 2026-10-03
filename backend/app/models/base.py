@@ -2,7 +2,7 @@
 
 import enum
 
-from sqlalchemy import BigInteger, Enum, Identity, MetaData, Numeric, String
+from sqlalchemy import BigInteger, Enum, ForeignKey, Identity, MetaData, Numeric, String
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 # Nomes previsíveis para constraints e índices. Sem isso o Postgres inventa nomes
@@ -47,3 +47,9 @@ class Base(DeclarativeBase):
 class IdMixin:
     # sort_order negativo: o id vem como primeira coluna da tabela.
     id: Mapped[int] = mapped_column(Identity(), primary_key=True, sort_order=-1)
+
+
+class UserOwnedMixin:
+    """Linha que pertence a um usuário (ADR 0002). Toda consulta filtra por esta coluna."""
+
+    user_id: Mapped[int] = mapped_column(ForeignKey("app_user.id"), index=True, sort_order=-1)

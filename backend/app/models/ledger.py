@@ -19,18 +19,28 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.models.base import CURRENCY, MONEY, PRICE, QUANTITY, Base, IdMixin, enum_column
+from app.models.base import (
+    CURRENCY,
+    MONEY,
+    PRICE,
+    QUANTITY,
+    Base,
+    IdMixin,
+    UserOwnedMixin,
+    enum_column,
+)
 from app.models.enums import DataSource, Direction, EntryOrigin, EntryType
 
 
-class ImportFile(IdMixin, Base):
+class ImportFile(IdMixin, UserOwnedMixin, Base):
     """Um arquivo importado. O mesmo arquivo (mesmo SHA-256) não entra duas vezes."""
 
     __tablename__ = "import_file"
+    __table_args__ = (UniqueConstraint("user_id", "file_sha256"),)
 
     source: Mapped[DataSource] = mapped_column(enum_column(DataSource))
     file_name: Mapped[str] = mapped_column(String(255))
-    file_sha256: Mapped[str] = mapped_column(String(64), unique=True)
+    file_sha256: Mapped[str] = mapped_column(String(64))
     period_start: Mapped[date | None]
     period_end: Mapped[date | None]
     imported_at: Mapped[datetime] = mapped_column(
@@ -38,17 +48,18 @@ class ImportFile(IdMixin, Base):
     )
 
 
-class RawRow(IdMixin, Base):
+class RawRow(IdMixin, UserOwnedMixin, Base):
     """Linha original do arquivo, imutável.
 
     row_hash = conteúdo normalizado + fonte + índice de ocorrência daquele conteúdo no
     arquivo. Reimportar um período sobreposto não duplica, e linhas idênticas legítimas
-    (mesmo dia, ativo, tipo e valor) não se perdem.
+    (mesmo dia, ativo, tipo e valor) não se perdem. A unicidade é por usuário: duas
+    pessoas podem ter a mesma linha no extrato.
     """
 
     __tablename__ = "raw_row"
     __table_args__ = (
-        UniqueConstraint("source", "row_hash"),
+        UniqueConstraint("user_id", "source", "row_hash"),
         UniqueConstraint("import_file_id", "row_number"),
     )
 
@@ -62,7 +73,7 @@ class RawRow(IdMixin, Base):
     row_hash: Mapped[str] = mapped_column(String(64))
 
 
-class LedgerEntry(IdMixin, Base):
+class LedgerEntry(IdMixin, UserOwnedMixin, Base):
     """Lançamento normalizado, lido pelo motor de cálculo.
 
     Derivado das linhas brutas (pode ser apagado e regerado) ou lançado à mão.

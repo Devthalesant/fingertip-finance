@@ -12,9 +12,11 @@ from app.models.registry import (
     Institution,
     InstitutionAlias,
 )
+from app.models.user import AppUser
 
 __all__ = [
     "Account",
+    "AppUser",
     "Asset",
     "AssetAlias",
     "Base",

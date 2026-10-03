@@ -6,10 +6,19 @@ from decimal import Decimal
 from sqlalchemy import ForeignKey, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.models.base import CURRENCY, MONEY, PRICE, QUANTITY, RATE, Base, IdMixin
+from app.models.base import (
+    CURRENCY,
+    MONEY,
+    PRICE,
+    QUANTITY,
+    RATE,
+    Base,
+    IdMixin,
+    UserOwnedMixin,
+)
 
 
-class PositionSnapshot(IdMixin, Base):
+class PositionSnapshot(IdMixin, UserOwnedMixin, Base):
     """Posição informada por um relatório consolidado. Gabarito, não verdade."""
 
     __tablename__ = "position_snapshot"
