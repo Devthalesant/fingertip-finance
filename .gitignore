@@ -24,6 +24,9 @@ data/
 # Excecao: assets do frontend (icones, logo). Nunca prints com dados reais.
 !frontend/public/**
 
+# Contexto pessoal do dono para o Claude Code (ver CLAUDE.md)
+CLAUDE.local.md
+
 # Segredos e chaves
 .env
 .env.*
