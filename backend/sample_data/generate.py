@@ -7,14 +7,20 @@ Determinístico: rodar de novo gera os mesmos bytes. A pasta padrão (sample_dat
 import sys
 from pathlib import Path
 
+from sample_data.b3_consolidated import write_consolidated
 from sample_data.b3_format import write_movement_statement
-from sample_data.scenario import movement_rows
+from sample_data.scenario import consolidated_march_2024, movement_rows
 
 DEFAULT_OUT = Path(__file__).parent / "out"
 
 
 def generate(out_dir: Path = DEFAULT_OUT) -> list[Path]:
-    return [write_movement_statement(movement_rows(), out_dir / "movimentacao-demo.xlsx")]
+    return [
+        write_movement_statement(movement_rows(), out_dir / "movimentacao-demo.xlsx"),
+        write_consolidated(
+            consolidated_march_2024(), out_dir / "relatorio-consolidado-mensal-2024-marco.xlsx"
+        ),
+    ]
 
 
 if __name__ == "__main__":
