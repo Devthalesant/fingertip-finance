@@ -37,7 +37,7 @@ especiais com `if` por ticker no código (cada caso novo exige mudar o parser).
    (recebido, cedido, exercido, expirado) sai dos lançamentos, como a posição.
 6. **Mesmo título em duas fontes:** as duas entradas ficam gravadas; a segunda aponta
    para a primeira em `duplicate_of_id` e o motor a ignora.
-7. **Sem tabela de usuário** enquanto o app for de um investidor só.
+7. **Sem tabela de usuário** enquanto o app for de um investidor só. *(Substituída pelo ADR 0002.)*
 8. **Tipos:** valores monetários em `numeric(18,2)`; quantidade e preço unitário em
    `numeric(28,10)`; enums como texto com `CHECK`; chaves `bigint`.
 
