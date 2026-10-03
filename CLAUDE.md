@@ -147,7 +147,8 @@ depois é `pg_dump` + `restore`.
   última), `uv run alembic upgrade head --sql` (só gera o SQL, sem banco). A URL vem do
   `.env` via `app.config`, nunca do `alembic.ini`. Modelos em `app/models/` (ver ADR 0001).
 - **Ambientes:**
-  - `dev`: Postgres local (Postgres.app, **a instalar** antes dos testes do parser).
+  - `dev`: Postgres 18 local via Homebrew (`postgresql@18`), para testes que gravam no
+    banco.
   - `demo`: o projeto atual no Neon, branch **`demo`** (renomeada de `production`).
     Só dados sintéticos. É o banco do `.env` hoje, com a migration inicial aplicada.
     Usuário atual é o dono (`*_owner`); serve para o demo.
@@ -256,6 +257,20 @@ scratch/        rascunhos locais, ignorado (build_b3.py é o protótipo do parse
   `AMORTIZACAO PROGRAMADA`, `COMPRA / VENDA` e `COMPRA/VENDA`).
 - Consolidado: produto com espaços sobrando no fim; aba termina com linha vazia,
   "Total" e o valor; quantidade de proventos como texto; célula vazia e `""` misturadas.
+
+**IR de ações (para a v0.7; fonte: IN RFB 1.585/2015 e P&R IRPF 2026)**
+- Isenção: vendas de ações no mês até R$ 20 mil → lucro isento (art. 59). Não vale para
+  day trade, ETF de ações, FII nem exercício de opções.
+- **Prejuízo de mês isento é compensável** (art. 59, § 1º: a dispensa de declarar
+  vendas isentas não vale para quem quer compensar as perdas).
+- Perdas compensam ganhos do mesmo mês ou de meses seguintes, sem prazo, inclusive em
+  anos seguintes (art. 64; P&R 709 e 711). Nunca meses anteriores (P&R 710).
+- Day trade só compensa com day trade; operação comum só com operação comum.
+- Lucro de mês isento **não consome** o prejuízo acumulado (vai para Rendimentos
+  Isentos, não para Renda Variável). É interpretação aceita, não texto literal:
+  validar com contador na v0.7.
+- Gabarito sintético: prejuízo de CVCB3 (mar/2022, −1.500) abate o lucro de PETR4
+  (mai/2023, +3.000) → base 1.500 → DARF de R$ 225.
 
 **Renda fixa bancária**
 - CDBs de aportes pequenos podem não aparecer na B3. A fonte é o extrato do banco e,
