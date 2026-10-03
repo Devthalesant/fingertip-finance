@@ -1,10 +1,12 @@
 # Fingertip Finance
 
-Webapp pessoal de finanças, para uso de uma única pessoa. Consolida investimentos de
-várias fontes (B3, bancos, exterior) numa visão só, **avisa o que importa** (insights) e
-controla e categoriza gastos do cartão. Integra com APIs externas (Banco Central, dados
-de mercado, Open Finance via Pluggy). O repositório é **público** e também serve de
-portfólio (posts no LinkedIn a cada versão).
+Webapp de finanças. Consolida investimentos de várias fontes (B3, bancos, exterior)
+numa visão só, **avisa o que importa** (insights) e controla e categoriza gastos do
+cartão. Integra com APIs externas (Banco Central, dados de mercado, Open Finance via
+Pluggy). Serve de portfólio (posts no LinkedIn a cada versão) e mira **monetização**:
+a parte de investimentos vira produto multiusuário com mensalidade (ADR 0002); gastos
+e Pluggy ficam como módulo pessoal do dono por enquanto. O repositório é **público**
+hoje e será fechado.
 
 ## Visão do produto
 
@@ -64,8 +66,9 @@ usar, mobile-first (o uso principal é no celular), instalável como PWA.
   `DATABASE_URL`, pelo código do backend (API ou jobs).
 - **Dois ambientes, dois bancos:** `demo` (dados sintéticos, link público no
   portfólio) e `prod` (dados reais, com login). Nunca misturar.
-- **API autenticada desde o início**, mesmo em dev. Usuário único: login aceita só a
-  conta do dono (Auth.js com Google/GitHub ou passkey); o FastAPI valida o token.
+- **API autenticada desde o início**, mesmo em dev. Multiusuário em beta fechado: login
+  (Auth.js com Google/GitHub ou passkey) aceita só e-mails convidados; o FastAPI valida
+  o token. Toda consulta a dados do usuário filtra por `user_id` (ADR 0002).
 - Banco com papéis separados: um com privilégio mínimo para a aplicação, outro para
   as migrations. Backups (`pg_dump`) sempre criptografados.
 - A interface tem **modo "ocultar valores"** (privacidade e prints para o LinkedIn).
@@ -163,7 +166,7 @@ curto e cota gratuita). Custo esperado: zero (domínio próprio opcional).
 ## Estrutura
 
 ```
-backend/        app/config.py, app/models/ (14 tabelas), alembic/ (migrations), tests/,
+backend/        app/config.py, app/models/ (15 tabelas), alembic/ (migrations), tests/,
                 check_db.py. API, parsers, motor e jobs virão aqui
 frontend/       Next.js + TypeScript (a criar)
 infra/          configs de deploy (futuro)
@@ -289,6 +292,8 @@ Entregas em **fatias verticais**: cada versão vai do banco até a tela e rende 
 - [x] Fundação: uv + lockfile, pre-commit com gitleaks, `.gitignore` pronto p/ frontend
 - [ ] **v0.1 Carteira B3** ← em andamento
   - [x] Schema aprovado (ADR 0001), modelos SQLAlchemy, migration inicial aplicada no demo
+  - [x] Multiusuário (ADR 0002): `app_user`, `user_id` nas tabelas do usuário, ativo
+        privado; migration `d29a1ab84532` (aplicar no demo)
   - [ ] **Próximo:** gerador `sample_data/generate.py` (ver seção abaixo)
   - [ ] Postgres local (Postgres.app) para testes que gravam no banco
   - [ ] Parser B3 (a partir de `scratch/build_b3.py`) e motor de PM
@@ -298,6 +303,12 @@ Entregas em **fatias verticais**: cada versão vai do banco até a tela e rende 
       (patrimônio, alocação, comparação com CDI/IPCA/IBOV), TWR e TIR
 - [ ] v0.3 Renda fixa e exterior: CDBs (marcação na curva), Nomad (PTAX), notas de
       corretagem Rico/XP, tela de Conciliação
+  - CDBs fora da B3, para qualquer banco: o usuário informa só 5 campos (valor, data,
+    vencimento, indexador, taxa) e o backend calcula o saldo pela série do CDI. Entrada
+    por formulário curto (com "duplicar" para aportes recorrentes), planilha modelo para
+    lote e conferência periódica do saldo informado pelo banco (diverge → sinaliza)
+  - Logo depois, como diferencial: print do app do banco → IA extrai os campos → usuário
+    confirma (opcional; constar na política de privacidade). Open Finance só com receita
 - [ ] v0.4 Insights e proventos: feed de insights, calendário e histórico de proventos
 - [ ] v0.5 Gastos: importação das faturas Itaú (atual) e Rico (histórico), categorização
       por regras, KPIs customizáveis, taxa de poupança
@@ -311,10 +322,10 @@ Depois: categorização com ML, alertas por push (PWA), novos insights.
 ## v0.1: decisões já tomadas (não rediscutir)
 
 - **Schema:** 14 tabelas em 4 grupos (cadastro, importação/ledger, eventos,
-  conciliação/mercado). Detalhes e motivos no ADR 0001. A tabela
+  conciliação/mercado) mais `app_user`. Detalhes e motivos nos ADRs 0001 e 0002. A tabela
   `dividend_announcement` (proventos anunciados) fica para a v0.4.
-- **Ativo novo vindo de importação** entra como `A_CLASSIFICAR` e o app pede ao dono a
-  classe (uma vez por ativo).
+- **Ativo novo vindo de importação** entra como `A_CLASSIFICAR`; o admin classifica uma
+  vez e vale para todos (catálogo pré-carregado com a lista pública da B3/CVM).
 - **Lançamento manual + importação, modelo híbrido:** compra lançada à mão na hora
   (`origin = MANUAL`, com quantidade e valor total da nota, que já inclui os custos);
   o extrato da B3 importado depois traz proventos e eventos e casa com o manual via
