@@ -13,11 +13,13 @@ Dev: pytest, ruff, pre-commit (gitleaks, ruff). `pyproject.toml` + `uv.lock`
 | `uv run ruff check .` / `uv run ruff format .` | lint / formatação |
 | `uv add <pacote>` | nova dependência (pedir antes) |
 | `uv run pre-commit install` | hooks (uma vez por clone) |
-| `uv run python check_db.py` | testa a conexão (não imprime segredo) |
+| `uv run python check_db.py` | testa a conexão do ambiente (não imprime segredo) |
 | `uv run python -m sample_data.generate` | gera os xlsx sintéticos em `sample_data/out/` |
 
 ## Banco e ambientes
-- Config em `app/config.py`, lendo `DATABASE_URL` do `.env` da raiz. O Neon entrega
+- Config em `app/config.py`: `APP_ENV` escolhe o arquivo da raiz (`dev` padrão → `.env`,
+  banco local `fingertip_dev`; `demo` → `.env.demo`, Neon; `prod` → `.env.prod`). Ex.:
+  `APP_ENV=demo uv run alembic current`. O Neon entrega
   `postgresql://`; o código converte para `postgresql+psycopg://` (não editar o `.env`).
 - O Neon dorme após 5 min: a 1ª conexão demora. Usar retry.
 - `dev`: Postgres 18 local (Homebrew, `postgresql@18`). `demo`: Neon, branch `demo`,

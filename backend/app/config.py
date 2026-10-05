@@ -1,5 +1,6 @@
-"""Configuração da aplicação, lida do arquivo .env na raiz do repositório."""
+"""Configuração da aplicação, lida do .env do ambiente (APP_ENV) na raiz do repositório."""
 
+import os
 from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -7,11 +8,23 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 # backend/app/config.py -> parents[2] = raiz do repo
 ROOT_DIR = Path(__file__).resolve().parents[2]
 
+# Cada ambiente tem o seu arquivo; nunca misturar (dev local, demo e prod no Neon).
+ENV_FILES = {"dev": ".env", "demo": ".env.demo", "prod": ".env.prod"}
+
+
+def env_file_for(app_env: str) -> Path:
+    """Arquivo .env do ambiente pedido; recusa nomes desconhecidos."""
+    try:
+        return ROOT_DIR / ENV_FILES[app_env]
+    except KeyError:
+        valid = ", ".join(ENV_FILES)
+        raise ValueError(f"APP_ENV inválido: {app_env!r} (use {valid})") from None
+
 
 class Settings(BaseSettings):
     database_url: str
 
-    model_config = SettingsConfigDict(env_file=ROOT_DIR / ".env", extra="ignore")
+    model_config = SettingsConfigDict(extra="ignore")
 
     @property
     def sqlalchemy_url(self) -> str:
@@ -26,4 +39,4 @@ class Settings(BaseSettings):
         return self.database_url
 
 
-settings = Settings()
+settings = Settings(_env_file=env_file_for(os.environ.get("APP_ENV", "dev")))

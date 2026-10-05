@@ -1,11 +1,13 @@
-"""Testa a conexão com o Postgres (Neon).
+"""Testa a conexão com o Postgres do ambiente (APP_ENV: dev local, demo/prod no Neon).
 
-Uso (a partir da pasta backend/, com o venv ativo):
-    python check_db.py
+Uso (a partir da pasta backend/):
+    uv run python check_db.py
+    APP_ENV=demo uv run python check_db.py
 
 Não imprime a connection string nem a senha.
 """
 
+import os
 import sys
 import time
 
@@ -44,16 +46,19 @@ def main() -> int:
             continue
 
         print("Conexão OK")
+        print(f"  ambiente: {os.environ.get('APP_ENV', 'dev')}")
         print(f"  banco:    {banco}")
         print(f"  usuário:  {usuario}")
-        print(f"  SSL:      {'sim' if usa_ssl else 'NÃO (verifique sslmode=require)'}")
+        ssl = "sim" if usa_ssl else "não (normal no local; no Neon, exija sslmode=require)"
+        print(f"  SSL:      {ssl}")
         print(f"  versão:   {versao.split(',')[0]}")
         print(f"  conexão em {latencia:.2f}s (tentativa {tentativa})")
         return 0
 
     print("\nNão foi possível conectar.")
     print(f"Último erro: {ultimo_erro}")
-    print("Dicas: confira o DATABASE_URL no .env, o sslmode=require e se o projeto existe no Neon.")
+    print("Dicas: local, veja se o Postgres está ligado (pg_isready); Neon, confira o")
+    print("DATABASE_URL no .env do ambiente, o sslmode=require e se o projeto existe.")
     return 1
 
 
