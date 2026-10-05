@@ -10,7 +10,7 @@ import warnings
 from collections import Counter
 from dataclasses import dataclass
 from datetime import date, datetime
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from pathlib import Path
 
 from openpyxl import load_workbook
@@ -75,7 +75,42 @@ def parse_movement_statement(path: Path) -> list[MovementRow]:
         workbook.close()
 
 
+def movement_from_raw(
+    row_number: int,
+    payload: dict[str, str | None],
+    content_hash: str,
+    occurrence_index: int,
+    row_hash: str,
+) -> MovementRow:
+    """Relê uma linha bruta salva no banco (refazer o ledger sem o arquivo original)."""
+    cells = tuple(payload[name] for name in HEADER)
+    return MovementRow(
+        row_number=row_number,
+        payload=dict(payload),
+        content_hash=content_hash,
+        occurrence_index=occurrence_index,
+        row_hash=row_hash,
+        **_fields(row_number, cells),
+    )
+
+
 def _parse_row(number: int, cells: tuple, seen: Counter[str]) -> MovementRow:
+    parsed = _fields(number, cells)
+    content_hash = _content_hash(parsed)
+    occurrence = seen[content_hash]
+    seen[content_hash] += 1
+    row_hash = _sha256(f"{SOURCE}|{content_hash}|{occurrence}")
+    return MovementRow(
+        row_number=number,
+        payload={name: _cell_text(value) for name, value in zip(HEADER, cells, strict=True)},
+        content_hash=content_hash,
+        occurrence_index=occurrence,
+        row_hash=row_hash,
+        **parsed,
+    )
+
+
+def _fields(number: int, cells: tuple) -> dict:
     direction, day, movement, product, institution, quantity, price, amount = cells
     try:
         parsed = {
@@ -92,19 +127,7 @@ def _parse_row(number: int, cells: tuple, seen: Counter[str]) -> MovementRow:
         raise ValueError(f"Linha {number} do extrato inválida: {exc}") from exc
     if parsed["quantity"] is None:
         raise ValueError(f"Linha {number} do extrato sem quantidade")
-
-    content_hash = _content_hash(parsed)
-    occurrence = seen[content_hash]
-    seen[content_hash] += 1
-    row_hash = _sha256(f"{SOURCE}|{content_hash}|{occurrence}")
-    return MovementRow(
-        row_number=number,
-        payload={name: _cell_text(value) for name, value in zip(HEADER, cells, strict=True)},
-        content_hash=content_hash,
-        occurrence_index=occurrence,
-        row_hash=row_hash,
-        **parsed,
-    )
+    return parsed
 
 
 def _decimal(value: object) -> Decimal | None:
@@ -117,6 +140,12 @@ def _decimal(value: object) -> Decimal | None:
     if isinstance(value, float):
         # repr devolve o menor texto que volta ao mesmo float: 6.5 → "6.5", nunca 6.4999.
         return Decimal(repr(value))
+    if isinstance(value, str):
+        # O payload salvo no banco guarda os números como texto.
+        try:
+            return Decimal(value.strip())
+        except InvalidOperation:
+            pass
     raise ValueError(f"número esperado, veio {value!r}")
 
 

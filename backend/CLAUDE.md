@@ -48,6 +48,13 @@ Dev: pytest, ruff, pre-commit (gitleaks, ruff). `pyproject.toml` + `uv.lock`
   dono fica fora da regra "apague o código".
 - `gabarito`: método dos dados sintéticos e do gabarito à mão.
 
+## Linha de montagem do extrato (v0.1)
+`parsers/b3_movimentacao.py` lê (tipos e hash por linha) → `ledger/classify.py` dá o tipo
+(aluguel, transferências, JCP bruto) → `engine/positions.py` calcula (sem banco; eventos
+curados entram como `CuratedEvents`). `ledger/importer.py` grava as 3 camadas e refaz os
+lançamentos importados a cada importação. Mudou o resultado do leitor ou do
+classificador? Subir `PARSER_VERSION`. Rótulo novo da B3 = caso novo testado.
+
 ## Dinheiro
 `Decimal` no Python, `NUMERIC` no banco (`MONEY` 18,2; quantidade e preço 28,10),
 string decimal na API. Nunca `float`.

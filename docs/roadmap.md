@@ -5,22 +5,27 @@ O resumo com o status atual fica no `CLAUDE.md`; aqui ficam os detalhes.
 
 ## Próximos passos (atualizado em 05/10/2026)
 
-Feito em 05/10: bancos locais `fingertip_dev` (com as migrations) e `fingertip_test`;
-`APP_ENV` escolhe o `.env` (dev local, `.env.demo` no Neon); fixture `db_session` com
-banco real e trava de segurança (`backend/tests/db.py`).
+Feito em 05/10: bancos locais e `APP_ENV`; fixture `db_session`; a linha de montagem
+da v0.1, sem banco nas três primeiras peças:
+`app/parsers/b3_movimentacao.py` (leitor) → `app/ledger/classify.py` (classificador) →
+`app/engine/positions.py` (motor de PM, prova contra o gabarito + Hypothesis) e
+`app/ledger/importer.py` (grava as 3 camadas; reimportar não duplica; ledger refeito).
 
-1. **Parser B3 + motor de PM** (v0.1), seguindo as skills `gabarito`,
-   `test-driven-development` e `verification-before-completion`:
-   - parser grava as 3 camadas (arquivo → linha bruta → lançamento), regras em
-     `.claude/rules/dados-b3.md`; portar só regras de `scratch/build_b3.py`;
-   - o motor faz a "prova" contra `sample_data/expected.py`;
-   - testes de propriedade (skill `property-based-testing`): pedir ok para adicionar
-     `hypothesis` como dependência de desenvolvimento.
-2. Depois: endpoints, design, scaffold do frontend, tela Carteira, CI.
+1. **Ligar banco e motor**: ler os lançamentos do banco para o motor e carregar os
+   eventos curados (`corporate_event`, `subscription_offer`) da história sintética.
+   Decidir antes: troca de ticker é alias do mesmo ativo (modelo) ou par de ativos
+   (motor, `TickerChange`)? Hoje o motor espera dois códigos.
+2. Endpoints (carteira, importação), design, scaffold do frontend, tela Carteira, CI.
 
 ## Pendências e lembretes
-- **Avaliar as skills na prática** ao escrever o parser (especialmente a `gabarito`: foi
-  acionada? orientou certo?). Testes formais com o skill-creator ficaram para depois.
+- Skills na prática (parser e motor): `gabarito`, `test-driven-development` e
+  `property-based-testing` orientaram certo; a sabotagem (mutação manual) achou um
+  teste tautológico. Testes formais com o skill-creator ficaram para depois.
+- Lançamento manual × ledger refeito: o `importer` apaga e refaz os lançamentos
+  importados. Quando houver `duplicate_of_id` entre manual e importado, decidir qual
+  lado guarda o vínculo para não quebrar ao refazer.
+- Nome canônico da instituição criada na importação = primeira grafia vista; o admin
+  pode corrigir (a tabela de aliases é a verdade).
 - **Outras skills do obra/superpowers** a consultar conforme a necessidade (copiar e
   auditar, como as atuais): `systematic-debugging` (bugs e testes falhando),
   `writing-plans` e `executing-plans` (tarefas grandes), `requesting-code-review` e

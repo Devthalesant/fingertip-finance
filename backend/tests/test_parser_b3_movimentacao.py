@@ -9,7 +9,7 @@ import pytest
 from openpyxl import Workbook
 
 from app.models.enums import Direction as Dir
-from app.parsers.b3_movimentacao import parse_movement_statement
+from app.parsers.b3_movimentacao import movement_from_raw, parse_movement_statement
 from sample_data.b3_format import Direction, Movement, StatementRow, write_movement_statement
 from sample_data.scenario import movement_rows
 
@@ -158,3 +158,17 @@ def test_rejects_a_file_that_is_not_a_movement_statement(tmp_path: Path) -> None
     wb.save(tmp_path / "posicao.xlsx")
     with pytest.raises(ValueError, match="extrato de movimentação"):
         parse_movement_statement(tmp_path / "posicao.xlsx")
+
+
+def test_saved_payload_reads_back_to_the_same_row(tmp_path: Path) -> None:
+    # O ledger é refeito a partir das linhas brutas do banco: reler o payload salvo
+    # precisa dar exatamente a mesma linha, inclusive frações e "-".
+    for parsed in parse(movement_rows(), tmp_path):
+        again = movement_from_raw(
+            parsed.row_number,
+            parsed.payload,
+            parsed.content_hash,
+            parsed.occurrence_index,
+            parsed.row_hash,
+        )
+        assert again == parsed

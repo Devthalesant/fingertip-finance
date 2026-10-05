@@ -78,7 +78,7 @@ O diferencial não é "ver os números", é o app **dizer algo útil**:
 
 ## Onde está cada coisa
 ```
-backend/        app/ (config, models: 15 tabelas), alembic/, tests/, sample_data/
+backend/        app/ (config, models, parsers, ledger, engine), alembic/, tests/, sample_data/
 frontend/       Next.js (a criar)
 docs/           adr/ (decisões), roadmap.md (detalhe das versões)
 data/           LOCAL, ignorado: raw/ (originais reais) e processed/ (CSVs)
@@ -101,8 +101,10 @@ Referência carregada sob demanda (ler antes de mexer no assunto):
   - [x] Postgres 18 local instalado; contexto do Claude reorganizado; skills auditadas
   - [x] Bancos locais (`fingertip_dev`, `fingertip_test`), `.env` por `APP_ENV`,
         fixture `db_session` com banco real
-  - [ ] **Próximo (ver "Próximos passos" em `docs/roadmap.md`):** parser B3 e motor
-        de PM com TDD, gabarito e testes de propriedade
+  - [x] Leitor e classificador do extrato B3, motor de PM (gabarito + Hypothesis),
+        gravador nas 3 camadas
+  - [ ] **Próximo (ver "Próximos passos" em `docs/roadmap.md`):** ligar banco e motor
+        (eventos curados), depois endpoints
   - [ ] Endpoints, design, scaffold do frontend, tela Carteira, CI
 - [ ] v0.2 Mercado · v0.3 Renda fixa e exterior · v0.4 Insights e proventos ·
       v0.5 Gastos · v0.6 Pluggy · v0.7 IR · v1.0 Deploy

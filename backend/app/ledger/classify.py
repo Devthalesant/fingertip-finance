@@ -154,7 +154,7 @@ def _mark_internal_transfers(entries: list[ClassifiedEntry]) -> list[ClassifiedE
     groups: dict[tuple, dict[Direction, list[int]]] = defaultdict(lambda: defaultdict(list))
     for i, e in enumerate(entries):
         if e.entry_type is T.TRANSFERENCIA_CUSTODIA:
-            key = (e.trade_date, e.asset_code, e.quantity, _norm_institution(e.institution))
+            key = (e.trade_date, e.asset_code, e.quantity, institution_key(e.institution))
             groups[key][e.direction].append(i)
 
     result = list(entries)
@@ -181,7 +181,7 @@ def _mark_loans(entries: list[ClassifiedEntry], labels: dict[str, str]) -> list[
         e = result[i]
         if labels[e.row_hash] != TRADE_LABEL:
             continue
-        key = (e.asset_code, e.quantity, _norm_institution(e.institution))
+        key = (e.asset_code, e.quantity, institution_key(e.institution))
         if e.direction is Direction.OUT and e.unit_price is None:
             result[i] = replace(e, entry_type=T.ALUGUEL_SAIDA, affects_position=False)
             open_loans[key].append(i)
@@ -204,7 +204,7 @@ def _norm_label(label: str) -> str:
     return " ".join(text.replace(" / ", "/").split())
 
 
-def _norm_institution(name: str) -> str:
+def institution_key(name: str) -> str:
     # Mesma corretora com ponto final ou espaço duplo (a tabela de aliases é a palavra
     # final; aqui só importa saber se é a mesma).
     return " ".join(name.split()).rstrip(".")
