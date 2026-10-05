@@ -51,6 +51,12 @@ da v0.1, sem banco nas três primeiras peças:
     vencimento, indexador, taxa) e o backend calcula o saldo pela série do CDI.
     Formulário curto (com "duplicar" para aportes recorrentes), planilha modelo para
     lote, conferência periódica do saldo informado pelo banco (diverge → sinaliza).
+    Uso típico do dono: aporte quase todo mês, resgate quase nunca; o "duplicar"
+    (mesmo banco, taxa e vencimento pré-preenchidos) é o caminho principal.
+  - Explicação **muito clara** na tela: como preencher e a limitação (esse título não
+    aparece nem na B3, só o usuário sabe dele; o saldo é calculado, não informado).
+  - CDB que veio da B3 sem taxa: tarefa "complete a taxa" (uma vez por título), com
+    passo a passo genérico de onde achar (nota de aplicação, app ou extrato do banco).
   - Logo depois, como diferencial: print do app do banco → IA extrai os campos →
     usuário confirma (opcional; constar na política de privacidade). Open Finance só
     com receita.

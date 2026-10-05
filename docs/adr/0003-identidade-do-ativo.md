@@ -27,8 +27,11 @@ lançamentos que nunca casam com o extrato importado (`duplicate_of_id`).
    aviso ("antigo, hoje BHIA3"), para lançar compras anteriores à troca. Ativo que
    falta no catálogo entra pela importação (`A_CLASSIFICAR`) ou por pedido de inclusão
    ao admin.
-4. **Em aberto:** renda fixa fora da B3 (ex.: CDB de banco) não tem ticker para
-   pesquisar. Como ela entra será decidido à parte (v0.3).
+4. **Renda fixa sem ticker é exceção, por formulário estruturado.** CDB de banco que
+   não aparece na B3 vira ativo privado (`owner_user_id`) criado por formulário
+   (banco escolhido numa lista, tipo, taxa, datas, valor), nunca texto livre. CDB que
+   veio da B3 sem taxa pede ao usuário completar a taxa uma vez. As duas telas
+   explicam o passo a passo e a limitação. Detalhes na v0.3 do `docs/roadmap.md`.
 
 ## Consequências
 
