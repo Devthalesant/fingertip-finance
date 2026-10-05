@@ -3,24 +3,20 @@
 Entregas em **fatias verticais**: cada versão vai do banco até a tela e rende um post.
 O resumo com o status atual fica no `CLAUDE.md`; aqui ficam os detalhes.
 
-## Próximos passos (atualizado em 03/10/2026)
+## Próximos passos (atualizado em 05/10/2026)
 
-1. **Bancos locais** (proposta feita, aguardando o ok do dono):
-   - o dono roda `createdb fingertip_dev` e `createdb fingertip_test`;
-   - `.env` passa a apontar para o local; a URL do Neon vai para `.env.demo` (o dono
-     move a linha; nunca imprimir). `app/config.py` escolhe o arquivo por `APP_ENV`
-     (`dev` padrão, `demo`, depois `prod`);
-   - fixture de testes com banco real: schema via `alembic upgrade head`, transação
-     desfeita ao fim de cada teste, **recusa** URL fora de `localhost` ou banco sem
-     sufixo `_test`, pula com aviso se o Postgres estiver desligado.
-2. **Parser B3 + motor de PM** (v0.1), seguindo as skills `gabarito`,
+Feito em 05/10: bancos locais `fingertip_dev` (com as migrations) e `fingertip_test`;
+`APP_ENV` escolhe o `.env` (dev local, `.env.demo` no Neon); fixture `db_session` com
+banco real e trava de segurança (`backend/tests/db.py`).
+
+1. **Parser B3 + motor de PM** (v0.1), seguindo as skills `gabarito`,
    `test-driven-development` e `verification-before-completion`:
    - parser grava as 3 camadas (arquivo → linha bruta → lançamento), regras em
      `.claude/rules/dados-b3.md`; portar só regras de `scratch/build_b3.py`;
    - o motor faz a "prova" contra `sample_data/expected.py`;
    - testes de propriedade (skill `property-based-testing`): pedir ok para adicionar
      `hypothesis` como dependência de desenvolvimento.
-3. Depois: endpoints, design, scaffold do frontend, tela Carteira, CI.
+2. Depois: endpoints, design, scaffold do frontend, tela Carteira, CI.
 
 ## Pendências e lembretes
 - **Avaliar as skills na prática** ao escrever o parser (especialmente a `gabarito`: foi

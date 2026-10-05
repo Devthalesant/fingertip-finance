@@ -99,9 +99,10 @@ Referência carregada sob demanda (ler antes de mexer no assunto):
 - [ ] **v0.1 Carteira B3** ← em andamento
   - [x] Schema (ADR 0001), multiusuário (ADR 0002), gerador sintético com gabarito
   - [x] Postgres 18 local instalado; contexto do Claude reorganizado; skills auditadas
-  - [ ] **Próximo (ver "Próximos passos" em `docs/roadmap.md`):** 1) aprovar e montar
-        os bancos locais + `.env` por ambiente; 2) parser B3 e motor de PM com TDD,
-        gabarito e testes de propriedade
+  - [x] Bancos locais (`fingertip_dev`, `fingertip_test`), `.env` por `APP_ENV`,
+        fixture `db_session` com banco real
+  - [ ] **Próximo (ver "Próximos passos" em `docs/roadmap.md`):** parser B3 e motor
+        de PM com TDD, gabarito e testes de propriedade
   - [ ] Endpoints, design, scaffold do frontend, tela Carteira, CI
 - [ ] v0.2 Mercado · v0.3 Renda fixa e exterior · v0.4 Insights e proventos ·
       v0.5 Gastos · v0.6 Pluggy · v0.7 IR · v1.0 Deploy

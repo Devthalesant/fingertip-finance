@@ -26,8 +26,11 @@ Dev: pytest, ruff, pre-commit (gitleaks, ruff). `pyproject.toml` + `uv.lock`
   só dados sintéticos, migrations até `d29a1ab84532` aplicadas. `prod`: outro projeto
   no Neon, criado só ao importar dados reais, com papéis separados (app com privilégio
   mínimo, outro para migrations). Backups (`pg_dump`) criptografados.
-- Testes nunca usam o banco real: `tests/conftest.py` troca o `DATABASE_URL` por URL
-  falsa.
+- Testes nunca usam o banco do `.env`: `tests/conftest.py` troca o `DATABASE_URL` por
+  URL falsa. Quem precisa de banco pede a fixture `db_session`: Postgres local
+  `fingertip_test` (ou `TEST_DATABASE_URL`), recriado pelas migrations a cada rodada,
+  tudo desfeito ao fim de cada teste (até commits). `tests/db.py` **recusa** host fora
+  de `localhost` ou banco sem sufixo `_test`; com o Postgres desligado, os testes pulam.
 
 ## Migrations (Alembic)
 - `uv run alembic upgrade head` (aplica), `current` (versão), `downgrade -1` (desfaz),
