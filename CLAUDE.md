@@ -103,8 +103,8 @@ Referência carregada sob demanda (ler antes de mexer no assunto):
         fixture `db_session` com banco real
   - [x] Leitor e classificador do extrato B3, motor de PM (gabarito + Hypothesis),
         gravador nas 3 camadas
-  - [ ] **Próximo (ver "Próximos passos" em `docs/roadmap.md`):** ligar banco e motor
-        (eventos curados), depois endpoints
+  - [x] Banco ligado ao motor: gabarito provado em memória e pelo banco
+  - [ ] **Próximo (ver "Próximos passos" em `docs/roadmap.md`):** endpoints
   - [ ] Endpoints, design, scaffold do frontend, tela Carteira, CI
 - [ ] v0.2 Mercado · v0.3 Renda fixa e exterior · v0.4 Insights e proventos ·
       v0.5 Gastos · v0.6 Pluggy · v0.7 IR · v1.0 Deploy

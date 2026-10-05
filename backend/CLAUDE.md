@@ -52,7 +52,9 @@ Dev: pytest, ruff, pre-commit (gitleaks, ruff). `pyproject.toml` + `uv.lock`
 `parsers/b3_movimentacao.py` lê (tipos e hash por linha) → `ledger/classify.py` dá o tipo
 (aluguel, transferências, JCP bruto) → `engine/positions.py` calcula (sem banco; eventos
 curados entram como `CuratedEvents`). `ledger/importer.py` grava as 3 camadas e refaz os
-lançamentos importados a cada importação. Mudou o resultado do leitor ou do
+lançamentos importados a cada importação. `ledger/portfolio.py` lê do banco (lançamentos
+sem duplicatas + eventos curados) e chama o motor: é o que a API vai usar.
+`sample_data/catalog.py` semeia catálogo e eventos da história (só banco vazio). Mudou o resultado do leitor ou do
 classificador? Subir `PARSER_VERSION`. Rótulo novo da B3 = caso novo testado.
 
 ## Dinheiro

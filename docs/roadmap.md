@@ -11,9 +11,9 @@ da v0.1, sem banco nas três primeiras peças:
 `app/engine/positions.py` (motor de PM, prova contra o gabarito + Hypothesis) e
 `app/ledger/importer.py` (grava as 3 camadas; reimportar não duplica; ledger refeito).
 
-1. **Ligar banco e motor**: ler os lançamentos do banco para o motor e carregar os
-   eventos curados (`corporate_event`, `subscription_offer`) da história sintética.
-   Troca de ticker = dois ativos + `corporate_event` `TROCA_TICKER` (ADR 0003).
+1. ~~Ligar banco e motor~~ (05/10): `app/ledger/portfolio.py` lê lançamentos e eventos
+   curados; a prova do gabarito roda em memória **e** pelo banco
+   (`sample_data/catalog.py` semeia catálogo e eventos da história).
 2. Endpoints (carteira, importação), design, scaffold do frontend, tela Carteira, CI.
 
 ## Pendências e lembretes
@@ -24,6 +24,11 @@ da v0.1, sem banco nas três primeiras peças:
   importados. O manual sempre aponta para um ativo do catálogo (ADR 0003), então o
   casamento é por `asset_id`, data e quantidade; falta decidir qual lado guarda o
   `duplicate_of_id` para não quebrar ao refazer.
+- **Lacuna no schema (resolver antes de cadastrar a 2ª emissão de um FII):**
+  `subscription_offer.right_asset_id` é único, mas FII reusa o mesmo ticker de direito
+  (ex.: KNRI12) a cada emissão. Uma 2ª oferta do KNRI não cabe. O motor não sofre (casa
+  direito → recibo → ativo pelo código); é só o cadastro. Proposta: único por
+  (direito, data de corte) — migration simples.
 - Nome canônico da instituição criada na importação = primeira grafia vista; o admin
   pode corrigir (a tabela de aliases é a verdade).
 - **Outras skills do obra/superpowers** a consultar conforme a necessidade (copiar e

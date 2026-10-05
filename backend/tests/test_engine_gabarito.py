@@ -1,13 +1,19 @@
 """A prova: o motor de PM faz a história do investidor fictício e confere com o gabarito.
 
+Roda duas vezes: com os dados em memória e passando pelo banco (importação, catálogo e
+eventos curados semeados). Os dois caminhos têm que dar a mesma resposta.
+
 O gabarito (sample_data/expected.py) foi calculado à mão. Aqui nada é recalculado:
 só se compara o que o motor devolve com os números literais de lá.
 """
 
+from dataclasses import dataclass, replace
 from datetime import date
 from decimal import Decimal
+from pathlib import Path
 
 import pytest
+from sqlalchemy.orm import Session
 
 from app.engine.positions import (
     Bonus,
@@ -19,10 +25,14 @@ from app.engine.positions import (
     compute_portfolio,
 )
 from app.ledger.classify import classify_movements
+from app.ledger.importer import import_b3_movements
+from app.ledger.portfolio import load_curated_events, load_entries
+from app.models import AppUser
 from app.models.enums import EntryType as T
 from app.parsers.b3_movimentacao import parse_movement_statement
 from sample_data import expected
 from sample_data.b3_format import write_movement_statement
+from sample_data.catalog import seed_story_catalog
 from sample_data.scenario import BROKER_A, BROKER_B, movement_rows
 
 CENT = Decimal("0.01")
@@ -48,11 +58,16 @@ FIXED_INCOME_CODES = {
 }
 
 
-@pytest.fixture(scope="module")
-def story_entries(tmp_path_factory: pytest.TempPathFactory) -> list[Entry]:
-    path = tmp_path_factory.mktemp("b3") / "movimentacao.xlsx"
-    rows = parse_movement_statement(write_movement_statement(movement_rows(), path))
-    return [
+@dataclass(frozen=True)
+class Source:
+    entries: list[Entry]
+    events: CuratedEvents
+
+
+def from_memory(path: Path) -> Source:
+    """Arquivo → leitor → classificador → motor, sem banco."""
+    rows = parse_movement_statement(path)
+    entries = [
         Entry(
             trade_date=e.trade_date,
             entry_type=e.entry_type,
@@ -66,11 +81,31 @@ def story_entries(tmp_path_factory: pytest.TempPathFactory) -> list[Entry]:
         )
         for e in classify_movements(rows)
     ]
+    return Source(entries, STORY_EVENTS)
 
 
-@pytest.fixture(scope="module")
-def story(story_entries: list[Entry]) -> PortfolioState:
-    return compute_portfolio(story_entries, STORY_EVENTS)
+def from_database(path: Path, session: Session) -> Source:
+    """Arquivo → banco (catálogo e eventos curados semeados) → motor."""
+    seed_story_catalog(session)
+    user = AppUser(email="demo@example.com")
+    session.add(user)
+    session.flush()
+    import_b3_movements(session, user.id, path)
+    return Source(load_entries(session, user.id), load_curated_events(session))
+
+
+# A mesma prova pelos dois caminhos: tem que dar a mesma resposta.
+@pytest.fixture(params=["memoria", "banco"])
+def source(request: pytest.FixtureRequest, tmp_path: Path) -> Source:
+    path = write_movement_statement(movement_rows(), tmp_path / "movimentacao.xlsx")
+    if request.param == "memoria":
+        return from_memory(path)
+    return from_database(path, request.getfixturevalue("db_session"))
+
+
+@pytest.fixture
+def story(source: Source) -> PortfolioState:
+    return compute_portfolio(source.entries, source.events)
 
 
 def summary(state: PortfolioState) -> dict:
@@ -149,9 +184,9 @@ def test_story_with_curated_events_raises_no_flags(story: PortfolioState) -> Non
     assert story.flags == []
 
 
-def test_quantities_on_the_consolidated_date(story_entries: list[Entry]) -> None:
+def test_quantities_on_the_consolidated_date(source: Source) -> None:
     # Checkpoint de 31/03/2024 (conta no comentário de expected.py).
-    state = compute_portfolio(story_entries, STORY_EVENTS, until=expected.RECONCILIATION_DATE)
+    state = compute_portfolio(source.entries, source.events, until=expected.RECONCILIATION_DATE)
     quantities = {a: p.quantity for a, p in state.positions.items()}
     assert {
         a: quantities[a]
@@ -167,12 +202,9 @@ def test_quantities_on_the_consolidated_date(story_entries: list[Entry]) -> None
     }
 
 
-def test_bonus_without_curated_cost_is_zero_and_flagged(story_entries: list[Entry]) -> None:
+def test_bonus_without_curated_cost_is_zero_and_flagged(source: Source) -> None:
     # O erro comum que o gabarito cita: custo zero na bonificação → lucro de 310,00.
-    events = CuratedEvents(
-        ticker_changes=STORY_EVENTS.ticker_changes, subscriptions=STORY_EVENTS.subscriptions
-    )
-    state = compute_portfolio(story_entries, events)
+    state = compute_portfolio(source.entries, replace(source.events, bonuses=()))
     (itsa,) = [s for s in state.sales if s.asset == "ITSA4"]
     assert itsa.result == Decimal("310.00")
     assert [(f.asset, f.code) for f in state.flags] == [("ITSA4", "COST_ASSUMED_ZERO")]
