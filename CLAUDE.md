@@ -116,5 +116,8 @@ Referência carregada sob demanda (ler antes de mexer no assunto):
 - Lançamento manual + importação (híbrido): compra à mão (`origin = MANUAL`, valor da
   nota com custos); o extrato importado depois casa via `duplicate_of_id`. Períodos
   sobrepostos são deduplicados pelo hash.
+- Troca de ticker = dois ativos ligados por `corporate_event` `TROCA_TICKER`;
+  `asset_alias` só para grafias. Lançamento manual escolhe ativo do catálogo (busca),
+  nunca ticker em texto livre (ADR 0003).
 - Proventos: recebido e anunciado são exatos; não anunciado é projeção. A tela separa
   confirmado de estimado.

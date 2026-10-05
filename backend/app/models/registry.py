@@ -72,7 +72,11 @@ class Asset(IdMixin, Base):
 
 
 class AssetAlias(IdMixin, Base):
-    """Ticker antigo ou variante, com vigência. Troca de ticker não cria ativo novo."""
+    """Outra grafia do mesmo ativo, com vigência.
+
+    Troca de ticker NÃO é alias: são dois ativos ligados por um corporate_event
+    TROCA_TICKER (ADR 0003).
+    """
 
     __tablename__ = "asset_alias"
     __table_args__ = (

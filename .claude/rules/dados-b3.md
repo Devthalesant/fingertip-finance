@@ -56,7 +56,8 @@ paths:
 - Eventos vêm a crédito, sem preço. Desdobro e bonificação trazem as ações
   **recebidas**; grupamento traz a quantidade **resultante** (com fração, que sai em
   `Fração em Ativos` e volta em `Leilão de Fração` com valor).
-- Troca de ticker: só um crédito de `Atualização` no ticker novo. "Atualização" também
+- Troca de ticker: só um crédito de `Atualização` no ticker novo (no app: dois ativos +
+  evento `TROCA_TICKER`, ADR 0003). "Atualização" também
   pode ser ajuste de quantidade ou conversão de recibo: tratar pela tabela de eventos.
 - Grupamento muda a quantidade, não o custo total.
 - Bonificação: a B3 não informa o custo atribuído (assumir 0 e sinalizar; o real vem do
