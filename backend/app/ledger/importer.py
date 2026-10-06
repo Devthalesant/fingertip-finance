@@ -15,6 +15,7 @@ Não faz commit: quem chama decide (a API faz commit; os testes desfazem).
 """
 
 import hashlib
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
@@ -68,18 +69,31 @@ class ImportResult:
 
 
 def import_b3_movements(session: Session, user_id: int, path: Path) -> ImportResult:
-    sha256 = hashlib.sha256(path.read_bytes()).hexdigest()
+    """Arquivo local (testes, scripts): lido aqui mesmo, sem quarentena."""
+    return import_b3_upload(session, user_id, path.read_bytes(), path.name)
+
+
+def import_b3_upload(
+    session: Session,
+    user_id: int,
+    data: bytes,
+    file_name: str,
+    parse: Callable[[bytes], list[MovementRow]] = parse_movement_statement,
+) -> ImportResult:
+    """Bytes do arquivo. A API passa `parse_in_quarantine` (ADR 0004); o arquivo já
+    importado é reconhecido pelo SHA-256 antes de qualquer leitura."""
+    sha256 = hashlib.sha256(data).hexdigest()
     existing = session.scalar(
         select(ImportFile).where(ImportFile.user_id == user_id, ImportFile.file_sha256 == sha256)
     )
     if existing is not None:
         return ImportResult(existing.id, True, 0, 0, _count_entries(session, user_id))
 
-    rows = parse_movement_statement(path)
+    rows = parse(data)
     file = ImportFile(
         user_id=user_id,
         source=SOURCE,
-        file_name=path.name,
+        file_name=file_name,
         file_sha256=sha256,
         period_start=min((r.date for r in rows), default=None),
         period_end=max((r.date for r in rows), default=None),

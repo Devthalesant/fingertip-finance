@@ -36,6 +36,9 @@ da v0.1, sem banco nas três primeiras peças:
   (ex.: KNRI12) a cada emissão. Uma 2ª oferta do KNRI não cabe. O motor não sofre (casa
   direito → recibo → ativo pelo código); é só o cadastro. Proposta: único por
   (direito, data de corte) — migration simples.
+- **Primeira importação real (06/10):** o raio-x do upload só aceita peças `.xml` e
+  `.rels` (o sintético é assim). Se o xlsx real da B3 trouxer outra peça (ex.: miniatura),
+  a importação é recusada com `unexpected_part` no log: ajustar a lista com o nome visto.
 - Nome canônico da instituição criada na importação = primeira grafia vista; o admin
   pode corrigir (a tabela de aliases é a verdade).
 - **Outras skills do obra/superpowers** a consultar conforme a necessidade (copiar e

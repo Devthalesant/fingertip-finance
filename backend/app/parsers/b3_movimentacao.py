@@ -9,6 +9,7 @@ import hashlib
 import io
 import warnings
 from collections import Counter
+from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
@@ -79,20 +80,43 @@ def parse_movement_statement(source: Path | bytes) -> list[MovementRow]:
         header = next(lines, ())
         if tuple(header[: len(HEADER)]) != HEADER:
             raise ValueError(f"{name} não parece um extrato de movimentação da B3")
-        rows = []
-        seen: Counter[str] = Counter()
-        for number, cells in enumerate(lines, start=2):
-            cells = tuple(cells[: len(HEADER)])
-            if all(c is None or c == "" for c in cells):
-                continue
-            if len(rows) == MAX_ROWS:
-                raise ValueError(f"Extrato com mais de {MAX_ROWS} linhas")
-            if any(isinstance(c, str) and len(c) > MAX_CELL_CHARS for c in cells):
-                raise ValueError(f"Linha {number} do extrato com texto longo demais")
-            rows.append(_parse_row(number, cells, seen))
-        return rows
+        return _parse_lines(enumerate(lines, start=2))
     finally:
         workbook.close()
+
+
+def rows_from_payloads(items: Iterable[tuple[int, dict[str, str | None]]]) -> list[MovementRow]:
+    """Refaz as linhas a partir do texto das células (número da linha, payload).
+
+    É como a API recebe o resultado da quarentena: só texto, conferido de novo aqui, com
+    os hashes recalculados. Nada calculado pelo processo da quarentena é aceito pronto.
+    """
+    lines = []
+    for number, payload in items:
+        if (
+            not isinstance(number, int)
+            or not isinstance(payload, dict)
+            or set(payload) != set(HEADER)
+            or not all(v is None or isinstance(v, str) for v in payload.values())
+        ):
+            raise ValueError("Linha devolvida pela leitura em formato inesperado")
+        lines.append((number, tuple(payload[name] for name in HEADER)))
+    return _parse_lines(lines)
+
+
+def _parse_lines(numbered: Iterable[tuple[int, tuple]]) -> list[MovementRow]:
+    rows = []
+    seen: Counter[str] = Counter()
+    for number, cells in numbered:
+        cells = tuple(cells[: len(HEADER)])
+        if all(c is None or c == "" for c in cells):
+            continue
+        if len(rows) == MAX_ROWS:
+            raise ValueError(f"Extrato com mais de {MAX_ROWS} linhas")
+        if any(isinstance(c, str) and len(c) > MAX_CELL_CHARS for c in cells):
+            raise ValueError(f"Linha {number} do extrato com texto longo demais")
+        rows.append(_parse_row(number, cells, seen))
+    return rows
 
 
 def movement_from_raw(
