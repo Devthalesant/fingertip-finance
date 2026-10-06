@@ -7,19 +7,22 @@ memória e descartado; o log guarda motivo e tamanho, nunca conteúdo.
 
 import logging
 import re
-from datetime import date
+from datetime import date, datetime
 
 from fastapi import APIRouter, HTTPException, UploadFile, status
 from pydantic import BaseModel
+from sqlalchemy import func, select
 
 from app.api.deps import CurrentUserDep, SessionDep
+from app.api.rate_limit import limited
 from app.ledger.importer import import_b3_upload
+from app.models import ImportFile, RawRow
 from app.parsers.quarantine import QuarantineFailed, parse_in_quarantine
 from app.parsers.xlsx_guard import MAX_UPLOAD_BYTES, UnsafeFile
 
 log = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/imports", tags=["imports"])
+router = APIRouter(prefix="/imports", tags=["imports"], dependencies=[limited("api")])
 
 MAX_FILE_NAME = 255
 _CONTROL_CHARS = re.compile(r"[\x00-\x1f\x7f]")
@@ -42,7 +45,41 @@ class ImportOut(BaseModel):
     suspected_duplicates: list[SuspectedDuplicateOut]
 
 
-@router.post("/b3-movements")
+class ImportFileOut(BaseModel):
+    file_name: str
+    period_start: date | None
+    period_end: date | None
+    imported_at: datetime
+    new_rows: int  # linhas que entraram por este arquivo (as repetidas ficam com o anterior)
+
+
+@router.get("")
+def list_imports(session: SessionDep, user: CurrentUserDep) -> list[ImportFileOut]:
+    """Histórico de importações da pessoa, a mais recente primeiro."""
+    new_rows = (
+        select(func.count())
+        .where(RawRow.import_file_id == ImportFile.id)
+        .correlate(ImportFile)
+        .scalar_subquery()
+    )
+    rows = session.execute(
+        select(ImportFile, new_rows)
+        .where(ImportFile.user_id == user.id)
+        .order_by(ImportFile.imported_at.desc(), ImportFile.id.desc())
+    )
+    return [
+        ImportFileOut(
+            file_name=f.file_name,
+            period_start=f.period_start,
+            period_end=f.period_end,
+            imported_at=f.imported_at,
+            new_rows=count,
+        )
+        for f, count in rows
+    ]
+
+
+@router.post("/b3-movements", dependencies=[limited("upload")])
 def upload_b3_movements(file: UploadFile, session: SessionDep, user: CurrentUserDep) -> ImportOut:
     name = clean_file_name(file.filename)
     if not name.lower().endswith(".xlsx"):

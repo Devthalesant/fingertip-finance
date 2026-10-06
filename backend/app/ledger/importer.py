@@ -237,7 +237,8 @@ class _Resolver:
         self.session = session
         self.user_id = user_id
         self.accounts: dict[str, int] = {}
-        self.assets: dict[tuple[str, date], int] = {}
+        self.aliases: dict[str, list[tuple[date | None, date | None, int]]] = {}
+        self.assets: dict[str, int] = {}
 
     def account(self, raw_name: str) -> int:
         if raw_name not in self.accounts:
@@ -290,16 +291,22 @@ class _Resolver:
         return institution
 
     def asset(self, code: str, name: str | None, day: date) -> int:
-        """Pelo alias vigente na data, pelo código, ou cria no catálogo a classificar."""
-        key = (code, day)
-        if key not in self.assets:
-            asset_id = self.session.scalar(
-                select(AssetAlias.asset_id).where(
-                    AssetAlias.alias == code,
-                    or_(AssetAlias.valid_from.is_(None), AssetAlias.valid_from <= day),
-                    or_(AssetAlias.valid_to.is_(None), AssetAlias.valid_to >= day),
+        """Pelo alias vigente na data, pelo código, ou cria no catálogo a classificar.
+
+        Uma consulta por código, não por linha: os aliases do código são carregados uma
+        vez e a data é conferida em memória (o extrato tem milhares de datas).
+        """
+        if code not in self.aliases:
+            self.aliases[code] = self.session.execute(
+                select(AssetAlias.valid_from, AssetAlias.valid_to, AssetAlias.asset_id).where(
+                    AssetAlias.alias == code
                 )
-            ) or self.session.scalar(
+            ).all()
+        for valid_from, valid_to, asset_id in self.aliases[code]:
+            if (valid_from is None or valid_from <= day) and (valid_to is None or valid_to >= day):
+                return asset_id
+        if code not in self.assets:
+            asset_id = self.session.scalar(
                 # Ativo privado da pessoa primeiro, depois o catálogo compartilhado.
                 select(Asset.id)
                 .where(
@@ -313,5 +320,5 @@ class _Resolver:
                 self.session.add(asset)
                 self.session.flush()
                 asset_id = asset.id
-            self.assets[key] = asset_id
-        return self.assets[key]
+            self.assets[code] = asset_id
+        return self.assets[code]

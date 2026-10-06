@@ -39,6 +39,11 @@ dev = [
 # Não é um pacote publicável, só uma aplicação.
 package = false
 
+[tool.pytest.ini_options]
+# Teste de volume fica fora da bateria normal: `uv run pytest -m slow -s`.
+markers = ["slow: teste de volume (lento)"]
+addopts = "-m 'not slow'"
+
 [tool.ruff]
 line-length = 100
 target-version = "py312"

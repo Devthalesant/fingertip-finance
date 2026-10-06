@@ -14,6 +14,7 @@ from app.models import (
     Account,
     AppUser,
     Asset,
+    AssetAlias,
     ImportFile,
     Institution,
     InstitutionAlias,
@@ -23,7 +24,8 @@ from app.models import (
 from app.models.enums import AssetClass, EntryOrigin
 from app.models.enums import EntryType as T
 from sample_data.b3_format import write_movement_statement
-from sample_data.scenario import WEGE3, lend, movement_rows
+from sample_data.scenario import BROKER_A, WEGE3, buy, lend, movement_rows
+from sample_data.scenario import Asset as ScenarioAsset
 
 STORY_ROWS = len(movement_rows())
 
@@ -195,3 +197,24 @@ def test_each_user_has_their_own_rows(db_session: Session, user: AppUser, story_
     assert not result.already_imported
     assert count(db_session, RawRow, other) == STORY_ROWS
     assert count(db_session, LedgerEntry, user) == STORY_ROWS
+
+
+def test_alias_only_counts_inside_its_validity(
+    db_session: Session, user: AppUser, tmp_path: Path
+) -> None:
+    # A grafia "VLMX3" apontou para um ativo até 2022; depois, o código é o de outro.
+    old = Asset(canonical_code="VLMOLD3", name="ANTIGA", asset_class=AssetClass.ACAO)
+    new = Asset(canonical_code="VLMX3", name="NOVA", asset_class=AssetClass.ACAO)
+    db_session.add_all([old, new])
+    db_session.flush()
+    db_session.add(AssetAlias(asset_id=old.id, alias="VLMX3", valid_to=date(2022, 12, 31)))
+    db_session.flush()
+    product = ScenarioAsset("VLMX3", "EMPRESA FICTICIA X S/A")
+    broker = BROKER_A.spellings[0]
+    rows = [
+        buy(date(2022, 6, 1), product, 10, "10", broker),
+        buy(date(2023, 6, 1), product, 5, "10", broker),
+    ]
+    import_b3_movements(db_session, user.id, write_movement_statement(rows, tmp_path / "x.xlsx"))
+    by_date = {e.trade_date: e.asset_id for e in entries(db_session, user)}
+    assert by_date == {date(2022, 6, 1): old.id, date(2023, 6, 1): new.id}

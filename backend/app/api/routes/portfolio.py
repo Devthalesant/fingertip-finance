@@ -12,11 +12,12 @@ from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
 from app.api.deps import CurrentUserDep, SessionDep
+from app.api.rate_limit import limited
 from app.ledger.portfolio import compute_user_portfolio
 from app.models import Asset
 from app.models.enums import AssetClass
 
-router = APIRouter(prefix="/portfolio", tags=["portfolio"])
+router = APIRouter(prefix="/portfolio", tags=["portfolio"], dependencies=[limited("api")])
 
 CENT = Decimal("0.01")
 

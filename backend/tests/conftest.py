@@ -65,3 +65,13 @@ def client(db_session: Session) -> Iterator[TestClient]:
     with TestClient(app) as client:
         yield client
     app.dependency_overrides.clear()
+
+
+@pytest.fixture(autouse=True)
+def fresh_rate_limits() -> Iterator[None]:
+    """Cada teste começa sem requisições contadas (o limitador é global, em memória)."""
+    from app.api.rate_limit import limiter
+
+    limiter.reset()
+    yield
+    limiter.reset()

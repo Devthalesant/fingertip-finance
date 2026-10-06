@@ -257,3 +257,42 @@ def test_declared_size_is_refused_without_reading_the_body() -> None:
     asyncio.run(BodySizeLimit(never_called)(scope, receive, send))
     assert sent[0]["status"] == 413
     assert read == []
+
+
+# --- GET /imports ---------------------------------------------------------------------
+
+
+def list_imports(client: TestClient, email: str = "demo@example.com", sub: str = "g-1"):
+    response = client.get("/imports", headers=bearer(make_token(email, sub=sub)))
+    assert response.status_code == 200
+    return response.json()
+
+
+def test_history_newest_first(client: TestClient, owner: AppUser, tmp_path: Path) -> None:
+    rows = movement_rows()
+    first = write_movement_statement(rows[:20], tmp_path / "jan-set.xlsx").read_bytes()
+    second = write_movement_statement(rows[10:], tmp_path / "set-out.xlsx").read_bytes()
+    upload(client, first, name="jan-set.xlsx")
+    upload(client, second, name="set-out.xlsx")
+    history = list_imports(client)
+    assert [(h["file_name"], h["new_rows"]) for h in history] == [
+        ("set-out.xlsx", STORY_ROWS - 20),
+        ("jan-set.xlsx", 20),
+    ]
+    newest = history[0]
+    assert newest["period_start"] == min(r.date for r in rows[10:]).isoformat()
+    assert newest["period_end"] == max(r.date for r in rows[10:]).isoformat()
+    assert newest["imported_at"]
+
+
+def test_history_is_per_user(
+    client: TestClient, owner: AppUser, story: bytes, db_session: Session
+) -> None:
+    db_session.add(AppUser(email="outra@example.com"))
+    db_session.flush()
+    upload(client, story)
+    assert list_imports(client, "outra@example.com", sub="g-2") == []
+
+
+def test_history_needs_login(client: TestClient) -> None:
+    assert client.get("/imports").status_code == 401

@@ -2,8 +2,9 @@ from fastapi import APIRouter
 from pydantic import BaseModel
 
 from app.api.deps import CurrentUserDep
+from app.api.rate_limit import limited
 
-router = APIRouter(tags=["me"])
+router = APIRouter(tags=["me"], dependencies=[limited("api")])
 
 
 class Me(BaseModel):
