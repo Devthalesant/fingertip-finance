@@ -4,6 +4,7 @@ from collections.abc import Iterator
 
 import pytest
 from alembic import command
+from fastapi.testclient import TestClient
 from sqlalchemy import Engine, create_engine, text
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
@@ -52,3 +53,15 @@ def db_session(db_engine: Engine) -> Iterator[Session]:
         finally:
             session.close()
             transaction.rollback()
+
+
+@pytest.fixture
+def client(db_session: Session) -> Iterator[TestClient]:
+    """A API de verdade, com a sessão do teste no lugar da do banco do .env."""
+    from app.api.deps import get_session
+    from app.api.main import app
+
+    app.dependency_overrides[get_session] = lambda: db_session
+    with TestClient(app) as client:
+        yield client
+    app.dependency_overrides.clear()

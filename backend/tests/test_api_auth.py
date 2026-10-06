@@ -1,25 +1,14 @@
 """Porta da API: crachá assinado do frontend e convite do beta fechado (ADR 0004)."""
 
-from collections.abc import Iterator
-
 import jwt
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 from app.api.auth import InvalidToken, read_token
-from app.api.deps import get_session
 from app.api.main import app
 from app.models import AppUser
 from tests.api import bearer, make_token
-
-
-@pytest.fixture
-def client(db_session: Session) -> Iterator[TestClient]:
-    app.dependency_overrides[get_session] = lambda: db_session
-    with TestClient(app) as client:
-        yield client
-    app.dependency_overrides.clear()
 
 
 @pytest.fixture
