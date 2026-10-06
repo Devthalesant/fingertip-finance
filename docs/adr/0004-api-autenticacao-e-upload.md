@@ -56,12 +56,21 @@ Auth.js é um JWE criptografado, pensado para ser lido só pelo Next.js.
 - O frontend só precisa emitir o crachá; a API já nasce autenticada e testável com
   crachás fabricados nos testes.
 - `API_JWT_SECRET` é mais um segredo a guardar nos dois lados e a trocar se vazar.
+- Teste de volume (06/10, `uv run pytest -m slow -s`): investidor fictício muito ativo,
+  26 mil linhas em 10 anos (1 MB). Primeira medição: 1º upload 20,7 s, 2º (sobreposto)
+  37,8 s, carteira 0,67 s. Corrigido: o gravador consultava o ativo uma vez por linha
+  (agora uma por código) e faltavam índices em `related_entry_id` e `duplicate_of_id`
+  (migration `44c3abfdd4b8`). Depois: 10,9 s, 14,6 s e 0,61 s. O que sobra é gravar
+  ~25 mil lançamentos pelo ORM; um investidor comum (1 a 5 mil linhas) fica em 1 a 2 s.
 - Limites conhecidos, a revisitar quando o teste de volume apontar:
   - a carteira é recalculada do zero a cada acesso (solução: guardar o resultado e
     recalcular só quando entra lançamento);
   - cada importação refaz todos os lançamentos da pessoa (escolha por correção);
   - o gravador percorre todas as instituições ao achar uma grafia nova (trocar por
     busca no banco antes de abrir para terceiros);
-  - o upload é processado durante a requisição (se demorar, vira fila);
+  - sem limite por IP para requisições sem login (o crachá não é adivinhável; por trás
+    de proxy, o IP também é forjável);
+  - o upload é processado durante a requisição (se demorar, vira fila); gravar em lote
+    pelo SQLAlchemy Core é o próximo passo se o volume pesar;
   - o limite de requisições em memória não vale com várias instâncias (mover para o
     banco).

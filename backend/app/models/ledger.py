@@ -91,6 +91,10 @@ class LedgerEntry(IdMixin, UserOwnedMixin, Base):
         CheckConstraint("duplicate_of_id <> id", "not_duplicate_of_itself"),
         Index("ix_ledger_entry_asset_id_trade_date", "asset_id", "trade_date"),
         Index(None, "raw_row_id"),
+        # Apagar um lançamento confere quem aponta para ele: sem índice, varre a tabela a
+        # cada linha (o ledger é refeito a cada importação). Medido no teste de volume.
+        Index(None, "related_entry_id"),
+        Index(None, "duplicate_of_id"),
     )
 
     raw_row_id: Mapped[int | None] = mapped_column(ForeignKey("raw_row.id"))

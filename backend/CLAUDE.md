@@ -24,7 +24,7 @@ Dev: pytest, ruff, pre-commit (gitleaks, ruff). `pyproject.toml` + `uv.lock`
   `postgresql://`; o código converte para `postgresql+psycopg://` (não editar o `.env`).
 - O Neon dorme após 5 min: a 1ª conexão demora. Usar retry.
 - `dev`: Postgres 18 local (Homebrew, `postgresql@18`). `demo`: Neon, branch `demo`,
-  só dados sintéticos, migrations até `d29a1ab84532` aplicadas. `prod`: outro projeto
+  só dados sintéticos, migrations até `44c3abfdd4b8` aplicadas. `prod`: outro projeto
   no Neon, criado só ao importar dados reais, com papéis separados (app com privilégio
   mínimo, outro para migrations). Backups (`pg_dump`) criptografados.
 - Testes nunca usam o banco do `.env`: `tests/conftest.py` troca o `DATABASE_URL` por

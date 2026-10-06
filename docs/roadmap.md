@@ -3,8 +3,22 @@
 Entregas em **fatias verticais**: cada versão vai do banco até a tela e rende um post.
 O resumo com o status atual fica no `CLAUDE.md`; aqui ficam os detalhes.
 
-## Próximos passos (atualizado em 05/10/2026)
+## Próximos passos (atualizado em 06/10/2026)
 
+### Retomar aqui
+**Backend da v0.1 completo.** Próxima sessão começa pelo **design** (conversa, sem
+código): identidade visual (cores, tipografia, dark mode, números tabulares) e esboço da
+tela Carteira no celular. Ler antes `.claude/rules/frontend.md` e usar a skill
+`frontend-design`. Depois: scaffold do Next.js, tela Carteira, CI.
+
+Estado em 06/10:
+- Bancos: `dev` local, `demo` (Neon) e `fingertip_test` na migration `44c3abfdd4b8`.
+- Bateria: 258 testes (`uv run pytest`, ~16 s); volume à parte (`uv run pytest -m
+  slow -s`, ~30 s). O teste do teto de memória da quarentena só roda no Linux (CI).
+- API: `uv run uvicorn app.api.main:app --reload` em `backend/`, docs em `/docs`.
+  `API_JWT_SECRET` ainda não está no `.env`: só quando o frontend emitir o crachá.
+
+### Linha do tempo
 Feito em 05/10: bancos locais e `APP_ENV`; fixture `db_session`; a linha de montagem
 da v0.1, sem banco nas três primeiras peças:
 `app/parsers/b3_movimentacao.py` (leitor) → `app/ledger/classify.py` (classificador) →
@@ -14,7 +28,16 @@ da v0.1, sem banco nas três primeiras peças:
 1. ~~Ligar banco e motor~~ (05/10): `app/ledger/portfolio.py` lê lançamentos e eventos
    curados; a prova do gabarito roda em memória **e** pelo banco
    (`sample_data/catalog.py` semeia catálogo e eventos da história).
-2. Endpoints (carteira, importação), design, scaffold do frontend, tela Carteira, CI.
+2. ~~Endpoints~~ (06/10, ADR 0004), em `app/api/`: `/health`, `/me`, `/portfolio`,
+   `GET /imports`, `POST /imports/b3-movements`. Crachá JWT do Next.js (`auth.py`);
+   upload em camadas: corte na porta (`limits.py`), raio-x do zip
+   (`parsers/xlsx_guard.py`), defusedxml e tetos no leitor, quarentena em processo
+   separado com volta em JSON (`parsers/quarantine.py`); limite por usuário
+   (`rate_limit.py`); aviso de linha alterada pela B3 (`suspected_duplicates`); teste de
+   volume (`sample_data/volume.py`) que levou ao cache por código no gravador e aos
+   índices da migration `44c3abfdd4b8`. Toda barreira foi conferida por sabotagem.
+3. **Design**, scaffold do frontend (emite o crachá: `API_JWT_SECRET` nos dois lados),
+   tela Carteira, CI (no Linux, onde roda o teste do teto de memória da quarentena).
 
 ## Pendências e lembretes
 - Skills na prática (parser e motor): `gabarito`, `test-driven-development` e
@@ -39,6 +62,11 @@ da v0.1, sem banco nas três primeiras peças:
 - **Primeira importação real (06/10):** o raio-x do upload só aceita peças `.xml` e
   `.rels` (o sintético é assim). Se o xlsx real da B3 trouxer outra peça (ex.: miniatura),
   a importação é recusada com `unexpected_part` no log: ajustar a lista com o nome visto.
+- Upload de um investidor extremo (26 mil linhas) ainda leva ~11 s (gravar pelo ORM);
+  comum (1 a 5 mil linhas) fica em 1 a 2 s. Próximo passo, se pesar: gravar em lote
+  pelo SQLAlchemy Core ou fila (ADR 0004, limites conhecidos).
+- Aviso dos testes: o cliente de testes do Starlette vai trocar `httpx` por `httpx2`;
+  inofensivo por ora.
 - Nome canônico da instituição criada na importação = primeira grafia vista; o admin
   pode corrigir (a tabela de aliases é a verdade).
 - **Outras skills do obra/superpowers** a consultar conforme a necessidade (copiar e

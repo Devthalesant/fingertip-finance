@@ -104,8 +104,9 @@ Referência carregada sob demanda (ler antes de mexer no assunto):
   - [x] Leitor e classificador do extrato B3, motor de PM (gabarito + Hypothesis),
         gravador nas 3 camadas
   - [x] Banco ligado ao motor: gabarito provado em memória e pelo banco
-  - [ ] **Próximo (ver "Próximos passos" em `docs/roadmap.md`):** endpoints
-  - [ ] Endpoints, design, scaffold do frontend, tela Carteira, CI
+  - [x] Endpoints da v0.1 com crachá JWT e upload seguro (ADR 0004)
+  - [ ] **Próximo (ver "Próximos passos" em `docs/roadmap.md`):** design, scaffold do
+        frontend, tela Carteira, CI
 - [ ] v0.2 Mercado · v0.3 Renda fixa e exterior · v0.4 Insights e proventos ·
       v0.5 Gastos · v0.6 Pluggy · v0.7 IR · v1.0 Deploy
 
