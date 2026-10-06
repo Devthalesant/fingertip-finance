@@ -6,6 +6,7 @@ aluguel, provento) é trabalho do classificador, não daqui.
 """
 
 import hashlib
+import io
 import warnings
 from collections import Counter
 from dataclasses import dataclass
@@ -33,6 +34,10 @@ DIRECTIONS = {"Credito": Direction.IN, "Debito": Direction.OUT}
 # A B3 grava valor ausente como o texto "-".
 EMPTY = "-"
 CENT = Decimal("0.01")
+# Tetos contra arquivo fabricado (ADR 0004). Um extrato de anos tem poucos milhares de
+# linhas; o maior texto é o nome do produto ou da corretora.
+MAX_ROWS = 50_000
+MAX_CELL_CHARS = 300
 
 
 @dataclass(frozen=True)
@@ -52,23 +57,38 @@ class MovementRow:
     row_hash: str
 
 
-def parse_movement_statement(path: Path) -> list[MovementRow]:
-    """Lê a primeira aba do extrato, na ordem do arquivo (a mais nova primeiro)."""
+def parse_movement_statement(source: Path | bytes) -> list[MovementRow]:
+    """Lê a primeira aba do extrato, na ordem do arquivo (a mais nova primeiro).
+
+    Aceita o caminho ou os bytes (upload: nada vai para o disco). O XML passa pelo
+    defusedxml (o openpyxl o usa sozinho quando instalado) e só as colunas do extrato são
+    lidas; linhas e células têm teto (ADR 0004).
+    """
+    name = source.name if isinstance(source, Path) else "o arquivo"
     with warnings.catch_warnings():
         # O xlsx da B3 não tem estilo padrão e o openpyxl avisa a cada leitura.
         warnings.filterwarnings("ignore", message="Workbook contains no default style")
-        workbook = load_workbook(path, read_only=True, data_only=True)
+        workbook = load_workbook(
+            source if isinstance(source, Path) else io.BytesIO(source),
+            read_only=True,
+            data_only=True,
+        )
     try:
-        lines = workbook.worksheets[0].iter_rows(values_only=True)
+        # max_col: uma linha com milhares de colunas nem chega a virar tupla na memória.
+        lines = workbook.worksheets[0].iter_rows(max_col=len(HEADER), values_only=True)
         header = next(lines, ())
         if tuple(header[: len(HEADER)]) != HEADER:
-            raise ValueError(f"{path.name} não parece um extrato de movimentação da B3")
+            raise ValueError(f"{name} não parece um extrato de movimentação da B3")
         rows = []
         seen: Counter[str] = Counter()
         for number, cells in enumerate(lines, start=2):
             cells = tuple(cells[: len(HEADER)])
             if all(c is None or c == "" for c in cells):
                 continue
+            if len(rows) == MAX_ROWS:
+                raise ValueError(f"Extrato com mais de {MAX_ROWS} linhas")
+            if any(isinstance(c, str) and len(c) > MAX_CELL_CHARS for c in cells):
+                raise ValueError(f"Linha {number} do extrato com texto longo demais")
             rows.append(_parse_row(number, cells, seen))
         return rows
     finally:

@@ -1,14 +1,18 @@
 """Leitor do extrato de movimentação da B3: xlsx → linhas tipadas, com hash por linha."""
 
+import io
+import zipfile
 from collections import Counter
 from datetime import date
 from decimal import Decimal
 from pathlib import Path
 
 import pytest
+from defusedxml import DefusedXmlException
 from openpyxl import Workbook
 
 from app.models.enums import Direction as Dir
+from app.parsers import b3_movimentacao
 from app.parsers.b3_movimentacao import movement_from_raw, parse_movement_statement
 from sample_data.b3_format import Direction, Movement, StatementRow, write_movement_statement
 from sample_data.scenario import movement_rows
@@ -172,3 +176,75 @@ def test_saved_payload_reads_back_to_the_same_row(tmp_path: Path) -> None:
             parsed.row_hash,
         )
         assert again == parsed
+
+
+# --- Arquivo vindo de upload (ADR 0004, camada 2) -------------------------------------
+
+
+def with_sheet_xml(path: Path, transform) -> bytes:
+    """O mesmo xlsx com o XML da aba trocado (para fabricar as armadilhas)."""
+    out = io.BytesIO()
+    with zipfile.ZipFile(path) as src, zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as dst:
+        for info in src.infolist():
+            content = src.read(info.filename)
+            if info.filename == "xl/worksheets/sheet1.xml":
+                content = transform(content)
+            dst.writestr(info.filename, content)
+    return out.getvalue()
+
+
+def test_reads_bytes_like_a_file(tmp_path: Path) -> None:
+    path = write_movement_statement(movement_rows(), tmp_path / "x.xlsx")
+    assert parse_movement_statement(path.read_bytes()) == parse_movement_statement(path)
+
+
+@pytest.mark.parametrize(
+    "doctype",
+    [
+        # "Bomba de entidades": cada nível multiplica por 10 o anterior.
+        b'<!DOCTYPE w [<!ENTITY a "aaaaaaaaaa"><!ENTITY b "&a;&a;&a;&a;&a;&a;&a;&a;&a;&a;">]>',
+        # XML que tenta ler um arquivo do servidor.
+        b'<!DOCTYPE w [<!ENTITY x SYSTEM "file:///etc/hosts">]>',
+    ],
+    ids=["bomba-de-entidades", "entidade-externa"],
+)
+def test_xml_traps_are_refused(tmp_path: Path, doctype: bytes) -> None:
+    path = write_movement_statement([row()], tmp_path / "x.xlsx")
+    data = with_sheet_xml(path, lambda xml: doctype + xml)
+    # O openpyxl embrulha o erro; o motivo de verdade é o bloqueio do defusedxml.
+    with pytest.raises(ValueError) as caught:
+        parse_movement_statement(data)
+    assert isinstance(caught.value.__cause__, DefusedXmlException)
+
+
+def test_too_many_rows_is_refused(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(b3_movimentacao, "MAX_ROWS", 3)
+    path = write_movement_statement([row()] * 4, tmp_path / "x.xlsx")
+    with pytest.raises(ValueError, match="linhas"):
+        parse_movement_statement(path)
+
+
+def test_huge_cell_is_refused(tmp_path: Path) -> None:
+    path = write_movement_statement([row(product="A" * 10_000)], tmp_path / "x.xlsx")
+    with pytest.raises(ValueError, match="longo"):
+        parse_movement_statement(path)
+
+
+def test_extra_columns_far_away_are_ignored(tmp_path: Path) -> None:
+    # Lixo numa coluna distante não entra na linha nem no hash.
+    path = write_movement_statement([row()], tmp_path / "x.xlsx")
+    data = with_sheet_xml(
+        path,
+        lambda xml: xml.replace(
+            b"</row>", b'<c r="ZZ2" t="inlineStr"><is><t>lixo</t></is></c></row>', 1
+        ),
+    )
+    assert parse_movement_statement(data) == parse_movement_statement(path)
+
+
+def test_openpyxl_reads_xml_through_defusedxml() -> None:
+    # Se o defusedxml sumir das dependências, o openpyxl volta ao leitor sem proteção
+    # sem avisar ninguém. Este teste avisa.
+    import openpyxl
+
+    assert openpyxl.DEFUSEDXML is True
