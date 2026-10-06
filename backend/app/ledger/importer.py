@@ -7,6 +7,10 @@
    refeitos a partir de TODAS as linhas brutas dela: o aluguel que sai num arquivo e
    volta no outro é reconhecido, e corrigir o classificador é só reprocessar.
 
+Se a B3 mudar uma linha entre dois exports (outro valor no período comum), o hash muda e
+a linha entra de novo. O gravador não tem como saber qual versão vale: guarda as duas e
+devolve a suspeita (mesma data, sentido, movimentação e produto) para a pessoa conferir.
+
 Não faz commit: quem chama decide (a API faz commit; os testes desfazem).
 """
 
@@ -30,7 +34,12 @@ from app.models import (
     RawRow,
 )
 from app.models.enums import AccountKind, AssetClass, EntryOrigin, InstitutionKind
-from app.parsers.b3_movimentacao import SOURCE, movement_from_raw, parse_movement_statement
+from app.parsers.b3_movimentacao import (
+    SOURCE,
+    MovementRow,
+    movement_from_raw,
+    parse_movement_statement,
+)
 
 # Muda quando o leitor ou o classificador mudam o resultado: dá para saber de qual
 # versão veio cada lançamento e reprocessar.
@@ -40,12 +49,22 @@ CUSTODY_LABEL = "B3"
 
 
 @dataclass(frozen=True)
+class SuspectedDuplicate:
+    date: date
+    movement: str
+    product: str
+    existing_row_id: int  # linha bruta de um arquivo anterior
+    new_row_id: int  # linha bruta deste arquivo
+
+
+@dataclass(frozen=True)
 class ImportResult:
     import_file_id: int
     already_imported: bool
     new_rows: int
     skipped_rows: int  # já gravadas por outro arquivo
     ledger_entries: int  # lançamentos importados da pessoa, depois de refeitos
+    suspected_duplicates: tuple[SuspectedDuplicate, ...] = ()
 
 
 def import_b3_movements(session: Session, user_id: int, path: Path) -> ImportResult:
@@ -78,7 +97,7 @@ def import_b3_movements(session: Session, user_id: int, path: Path) -> ImportRes
         )
     )
     new = [r for r in rows if r.row_hash not in known]
-    session.add_all(
+    saved = [
         RawRow(
             user_id=user_id,
             import_file_id=file.id,
@@ -90,10 +109,43 @@ def import_b3_movements(session: Session, user_id: int, path: Path) -> ImportRes
             row_hash=r.row_hash,
         )
         for r in new
-    )
+    ]
+    session.add_all(saved)
     session.flush()
+    suspects = _suspected_duplicates(session, user_id, file.id, new, saved)
     total = rebuild_ledger(session, user_id)
-    return ImportResult(file.id, False, len(new), len(rows) - len(new), total)
+    return ImportResult(file.id, False, len(new), len(rows) - len(new), total, suspects)
+
+
+def _suspected_duplicates(
+    session: Session, user_id: int, file_id: int, new: list[MovementRow], saved: list[RawRow]
+) -> tuple[SuspectedDuplicate, ...]:
+    """Linha nova com a mesma chave de uma linha de arquivo anterior, mas outro hash."""
+    if not new:
+        return ()
+    earlier = session.scalars(
+        select(RawRow).where(
+            RawRow.user_id == user_id,
+            RawRow.source == SOURCE,
+            RawRow.import_file_id != file_id,
+            RawRow.payload["Data"].astext.in_({r.payload["Data"] for r in new}),
+        )
+    )
+    by_key: dict[tuple, int] = {}
+    for raw in earlier:
+        row = movement_from_raw(
+            raw.row_number, raw.payload, raw.content_hash, raw.occurrence_index, raw.row_hash
+        )
+        by_key.setdefault(_key(row), raw.id)
+    return tuple(
+        SuspectedDuplicate(r.date, r.movement, r.product, by_key[_key(r)], raw.id)
+        for r, raw in zip(new, saved, strict=True)
+        if _key(r) in by_key
+    )
+
+
+def _key(row: MovementRow) -> tuple:
+    return (row.direction, row.date, " ".join(row.movement.split()), " ".join(row.product.split()))
 
 
 def rebuild_ledger(session: Session, user_id: int) -> int:

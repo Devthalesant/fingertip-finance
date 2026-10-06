@@ -24,6 +24,13 @@ da v0.1, sem banco nas três primeiras peças:
   importados. O manual sempre aponta para um ativo do catálogo (ADR 0003), então o
   casamento é por `asset_id`, data e quantidade; falta decidir qual lado guarda o
   `duplicate_of_id` para não quebrar ao refazer.
+  O casamento deve tolerar diferença de data (negociação em D, liquidação em D+2): outros
+  apps duplicam a compra manual por comparar só a data.
+- Linha alterada pela B3 entre dois exports (06/10): pesquisa não achou relato, mas o
+  Kinvo não importa proventos e eventos da B3 "por causa da qualidade dos dados". O
+  `importer` já guarda as duas versões e devolve `suspected_duplicates` (mesma data,
+  sentido, movimentação e produto, hash diferente). Falta a tela/insight de conferência e
+  testar com dois exports reais de mesmo período feitos em datas diferentes.
 - **Lacuna no schema (resolver antes de cadastrar a 2ª emissão de um FII):**
   `subscription_offer.right_asset_id` é único, mas FII reusa o mesmo ticker de direito
   (ex.: KNRI12) a cada emissão. Uma 2ª oferta do KNRI não cabe. O motor não sofre (casa

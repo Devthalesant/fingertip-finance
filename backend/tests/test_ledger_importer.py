@@ -1,5 +1,6 @@
 """Gravador: extrato da B3 → banco, nas três camadas (arquivo → linha bruta → lançamento)."""
 
+from dataclasses import replace
 from datetime import date
 from decimal import Decimal
 from pathlib import Path
@@ -87,8 +88,32 @@ def test_overlapping_file_adds_only_new_rows(
     import_b3_movements(db_session, user.id, first)
     result = import_b3_movements(db_session, user.id, second)
     assert (result.new_rows, result.skipped_rows) == (STORY_ROWS - 20, 10)
+    assert result.suspected_duplicates == ()
     assert count(db_session, RawRow, user) == STORY_ROWS
     assert count(db_session, LedgerEntry, user) == STORY_ROWS
+
+
+def test_row_changed_between_exports_is_saved_and_flagged(
+    db_session: Session, user: AppUser, tmp_path: Path
+) -> None:
+    # A B3 muda o valor de uma linha do período comum entre um export e outro: o hash
+    # muda e a linha entra de novo. Não dá para saber qual versão vale; o gravador
+    # guarda as duas e avisa, para a pessoa conferir.
+    rows = movement_rows()
+    i = next(i for i in range(10, 20) if rows[i].amount is not None)
+    changed = replace(rows[i], amount=rows[i].amount + Decimal("0.01"))
+    first = write_movement_statement(rows[:20], tmp_path / "a.xlsx")
+    second = write_movement_statement([*rows[10:i], changed, *rows[i + 1 :]], tmp_path / "b.xlsx")
+    import_b3_movements(db_session, user.id, first)
+    result = import_b3_movements(db_session, user.id, second)
+    assert result.new_rows == STORY_ROWS - 20 + 1
+    [suspect] = result.suspected_duplicates
+    assert (suspect.date, suspect.product) == (rows[i].date, rows[i].product)
+    existing, new = (
+        db_session.get(RawRow, suspect.existing_row_id),
+        db_session.get(RawRow, suspect.new_row_id),
+    )
+    assert existing.import_file_id != new.import_file_id == result.import_file_id
 
 
 def test_broker_spellings_become_one_institution_and_one_account(
