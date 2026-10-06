@@ -1,4 +1,5 @@
 import os
+import secrets
 from collections.abc import Iterator
 
 import pytest
@@ -12,6 +13,8 @@ from tests.db import TEST_DATABASE_URL, alembic_config, ensure_safe_test_url
 # Os testes nunca usam o banco do .env: uma URL falsa tem prioridade sobre ele.
 # Quem precisa de banco de verdade pede a fixture db_session (Postgres local de teste).
 os.environ["DATABASE_URL"] = "postgresql://test:test@localhost/test"
+# Chave do crachá sorteada a cada rodada: nenhuma chave, nem falsa, fica no código.
+os.environ["API_JWT_SECRET"] = secrets.token_urlsafe(48)
 
 
 @pytest.fixture(scope="session")

@@ -15,6 +15,7 @@ Dev: pytest, ruff, pre-commit (gitleaks, ruff). `pyproject.toml` + `uv.lock`
 | `uv run pre-commit install` | hooks (uma vez por clone) |
 | `uv run python check_db.py` | testa a conexão do ambiente (não imprime segredo) |
 | `uv run python -m sample_data.generate` | gera os xlsx sintéticos em `sample_data/out/` |
+| `uv run uvicorn app.api.main:app --reload` | sobe a API local (docs em `/docs`) |
 
 ## Banco e ambientes
 - Config em `app/config.py`: `APP_ENV` escolhe o arquivo da raiz (`dev` padrão → `.env`,
@@ -56,6 +57,12 @@ lançamentos importados a cada importação. `ledger/portfolio.py` lê do banco 
 sem duplicatas + eventos curados) e chama o motor: é o que a API vai usar.
 `sample_data/catalog.py` semeia catálogo e eventos da história (só banco vazio). Mudou o resultado do leitor ou do
 classificador? Subir `PARSER_VERSION`. Rótulo novo da B3 = caso novo testado.
+
+## API (ADR 0004)
+`app/api/`: `main.py` (app, CORS), `deps.py` (`SessionDep`, `CurrentUserDep`), `auth.py`
+(crachá JWT do Next.js → convite), `routes/`. Todo endpoint de dados usa
+`CurrentUserDep` e tem teste com dois usuários. Testes fabricam crachás com
+`tests/api.py`. Erros para fora são genéricos; o motivo vai só para o log.
 
 ## Dinheiro
 `Decimal` no Python, `NUMERIC` no banco (`MONEY` 18,2; quantidade e preço 28,10),

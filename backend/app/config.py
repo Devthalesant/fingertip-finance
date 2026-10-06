@@ -3,6 +3,7 @@
 import os
 from pathlib import Path
 
+from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # backend/app/config.py -> parents[2] = raiz do repo
@@ -23,6 +24,11 @@ def env_file_for(app_env: str) -> Path:
 
 class Settings(BaseSettings):
     database_url: str
+    # Chave do crachá que o servidor do Next.js assina (ADR 0004). Sem ela, a API recusa
+    # todo login; jobs e migrations não precisam dela.
+    api_jwt_secret: SecretStr | None = None
+    # De onde o navegador pode chamar a API (CORS).
+    frontend_origins: list[str] = ["http://localhost:3000"]
 
     model_config = SettingsConfigDict(extra="ignore")
 

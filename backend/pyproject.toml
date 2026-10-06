@@ -7,6 +7,9 @@ dependencies = [
     # API
     "fastapi==0.141.1",
     "uvicorn[standard]==0.54.0",
+    # Crachá assinado do frontend (ADR 0004) e upload de arquivo
+    "pyjwt==2.15.1",
+    "python-multipart==0.0.32",
     # Banco de dados (Postgres)
     "sqlalchemy==2.1.1",
     "alembic==1.20.0",
@@ -16,6 +19,8 @@ dependencies = [
     # Dados e parsers (B3 xlsx, extratos Nomad em PDF)
     "pandas==3.0.6",
     "openpyxl==3.1.5",
+    # O openpyxl usa sozinho quando instalado: blinda o XML do xlsx (ADR 0004)
+    "defusedxml==0.7.1",
     "pdfplumber==0.11.10",
     # Chamadas HTTP (API do Banco Central, Pluggy)
     "httpx==0.28.1",
