@@ -105,8 +105,9 @@ Referência carregada sob demanda (ler antes de mexer no assunto):
         gravador nas 3 camadas
   - [x] Banco ligado ao motor: gabarito provado em memória e pelo banco
   - [x] Endpoints da v0.1 com crachá JWT e upload seguro (ADR 0004)
-  - [ ] **Próximo (ver "Próximos passos" em `docs/roadmap.md`):** design, scaffold do
-        frontend, tela Carteira, CI
+  - [ ] **Design em andamento** (rounds 1 e 2 aprovados: direção "Painel", telas
+        Carteira, vazio e Ativo). **Próximo (ver `docs/roadmap.md`):** round 3, Início
+        com explicador; depois ADR de design, scaffold do frontend, tela Carteira, CI
 - [ ] v0.2 Mercado · v0.3 Renda fixa e exterior · v0.4 Insights e proventos ·
       v0.5 Gastos · v0.6 Pluggy · v0.7 IR · v1.0 Deploy
 

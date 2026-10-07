@@ -25,8 +25,10 @@ paths:
   data); o frontend só renderiza o feed.
 
 ## Design (definir antes do scaffold)
-- Identidade com tokens de cor, dark mode desde o início, números tabulares (Geist ou
-  Inter).
+- Em andamento: decisões dos rounds em `docs/roadmap.md` ("Retomar aqui"). Direção
+  aprovada (ainda não congelada): IBM Plex Sans (+ Condensed nas tabelas), alta/baixa em
+  azul/laranja + ▲▼. Congelar os tokens num ADR antes do scaffold.
+- Identidade com tokens de cor, dark mode desde o início, números tabulares.
 - Telas: Visão geral, Carteira, Ativo, Proventos, Renda fixa, Exterior, IR, Gastos,
   Conciliação.
 - Alta/baixa com cor **e** ícone; valores alinhados à direita; estados de carregamento

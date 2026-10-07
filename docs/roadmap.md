@@ -3,13 +3,38 @@
 Entregas em **fatias verticais**: cada versão vai do banco até a tela e rende um post.
 O resumo com o status atual fica no `CLAUDE.md`; aqui ficam os detalhes.
 
-## Próximos passos (atualizado em 06/10/2026)
+## Próximos passos (atualizado em 07/10/2026)
 
 ### Retomar aqui
-**Backend da v0.1 completo.** Próxima sessão começa pelo **design** (conversa, sem
-código): identidade visual (cores, tipografia, dark mode, números tabulares) e esboço da
-tela Carteira no celular. Ler antes `.claude/rules/frontend.md` e usar a skill
-`frontend-design`. Depois: scaffold do Next.js, tela Carteira, CI.
+**Design em andamento** (quadro de design: link na memória do Claude, arquivos `.dc.html`).
+Rounds aprovados, identidade ainda **não congelada** (o dono quer refinar mais):
+- Round 1 (07/10): direção **B "Painel"**. Sereno no topo, analítico ao afunilar
+  (divulgação progressiva). IBM Plex Sans (+ Condensed nas tabelas), fundo azulado,
+  alta/baixa em **azul/laranja + ▲▼** (daltonismo), dark mode seguindo o sistema.
+  Gráfico Rentabilidade com espaço próprio: frase-veredito, períodos, CDI/IPCA/IBOV
+  ligáveis, linhas diferenciadas por tracejado. Estado vazio da Carteira com o passo a
+  passo do extrato da B3. Superfície só onde agrupa (sem "card em tudo").
+- Round 2 (07/10): tela **Ativo**. Retorno decomposto (valorização + proventos = total),
+  cotação × **PM em escada** com as compras marcadas, proventos recebido/anunciado/
+  estimado por estilo (cheio/listrado/tracejado), aviso concreto de concentração,
+  histórico em linha do tempo.
+- Decisões: retorno total mostra **% sobre o custo** agora; na v0.2 entra a **TIR** ao
+  lado (as duas ficam), cada métrica com um **explicador** (toque abre a explicação em
+  linguagem simples). Ordem das seções da Ativo fica fixa por ora.
+- Ideias guardadas: ordem da tela Ativo por tipo (FII prioriza proventos; ação, o
+  gráfico). Animação: um momento marcante (linha do gráfico se desenhando) + respostas
+  ao toque, nada de fade em tudo.
+- Pedidos ao backend que a Ativo revelou: PM **depois de cada evento** na API (o motor
+  já calcula passo a passo); cotações (v0.2); proventos (v0.4).
+
+Próximo (parou aqui em 07/10): **round 3, tela Início (Visão geral)** com o componente
+**explicador**: no celular não há hover, então é um ⓘ ao lado da métrica que abre uma
+folha de baixo com "o que é" (uma frase simples), "o seu número" e "por que importa".
+Testar com TIR e % sobre o custo. Divisão proposta: **Início** = "como estou e o que
+fazer hoje" (feed do copiloto, patrimônio de todas as fontes, taxa de poupança no
+futuro); **Carteira** = posições e alocação. Resolver a repetição de patrimônio e avisos
+entre as duas telas. Depois: estados (carregando, erro, upload em andamento); ADR de
+design com os tokens congelados; scaffold do Next.js, tela Carteira, CI.
 
 Estado em 06/10:
 - Bancos: `dev` local, `demo` (Neon) e `fingertip_test` na migration `44c3abfdd4b8`.
